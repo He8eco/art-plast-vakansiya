@@ -1,0 +1,96 @@
+.promotions .stock {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.promotions .stock p {
+  width: 10.5rem;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.promotions .stock .line {
+  display: block;
+  border: none;
+  width: 85%;
+  height: 0.1rem;
+  content: "";
+  background: #000;
+  margin-top: 0.4rem;
+}
+
+.promotions .stock .points {
+  position: absolute;
+  right: 0;
+}
+
+.promotions .product__cards {
+  display: flex;
+  justify-content: space-around;
+}
+
+.promotions .position {
+  color: #000;
+}
+
+.promotion-carousel {
+  display: flex;
+  align-items: center;
+  position: relative;
+  justify-content: space-between;
+}
+
+.promotion-carousel .arrow {
+  display: flex;
+  align-items: center;
+  height: 17rem;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: rgba(0, 0, 0, 0.5);
+  padding: 0 0.625rem;
+  user-select: none;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.promotion-carousel .arrow:disabled {
+  visibility: hidden; /* Или display: none; */
+}
+
+.promotion-carousel .arrow:hover {
+  color: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.promotion-carousel .arrow:active {
+  background: rgba(0, 0, 0, 0.15);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.promotion-products {
+  display: flex;
+  width: calc(100% - 2.5rem); /* Учтем ширину стрелок */
+  transition: transform 0.5s ease;
+}
+
+.promotion-products .card {
+  min-width: 16rem; /* Задайте ширину карточки */
+  margin-right: 0.625rem;
+  flex-shrink: 0;
+}
+
+.left-arrow {
+  margin-right: 0rem;
+}
+@media (max-width: 768px) {
+  .promotions .stock p {
+    width: 16rem;
+    font-size: 2rem;
+  }
+
+  .promotions .stock .line {
+    width: 75%;
+    height: 0.11rem;
+  }
+}

@@ -1,0 +1,39 @@
+.listEditing {
+  margin-right: 0rem;
+  width: 25%;
+  position: relative;
+  height: max-content;
+  background-color: #fff;
+  border-radius: 1em;
+}
+
+.listEditing::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  margin: -0.25rem;
+  border-radius: inherit !important; /* !importanté */
+  background: linear-gradient(to right, #660303, #0a0a0a);
+}
+
+.listEditing a {
+  display: block;
+  padding: 0.5rem;
+  color: #000;
+  font-size: 1.2rem;
+}
+
+.listEditing a:hover {
+  opacity: 0.9;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.listEditing .active {
+  color: #fff;
+  background: linear-gradient(to right, #660303, #0a0a0a);
+  text-align: center;
+}

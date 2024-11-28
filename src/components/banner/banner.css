@@ -1,0 +1,16 @@
+.banner {
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  width: 75%;
+  border-radius: 0.5rem;
+  min-height: 21rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+}
+@media (max-width: 768px) {
+  .banner {
+    width: 100%;
+  }
+}
