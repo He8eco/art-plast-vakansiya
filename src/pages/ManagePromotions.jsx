@@ -275,7 +275,7 @@ export default function ManagePromotions() {
 
         {/* Редактирование акций */}
         <div className="edit-promotion">
-          <h3>Редактирование акций</h3>
+          <p className="title">Редактирование акций</p>
 
           {/* Выбор типа акции */}
           <p>Выберите тип акции для редактирования:</p>
@@ -343,7 +343,7 @@ export default function ManagePromotions() {
 
         {/* Удаление акций */}
         <div className="delete-promotion">
-          <h3>Удаление акций</h3>
+          <p className="title">Удаление акций</p>
 
           {/* Выбор типа акции */}
           <p>Выберите тип акции для удаления:</p>

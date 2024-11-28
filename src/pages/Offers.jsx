@@ -151,7 +151,8 @@ export default function Offers() {
 
         {/* Редактирование предложения */}
         <div className="edit-offer">
-          <h3>Редактирование предложения</h3>
+          <p className="title">Редактирование предложения</p>
+          <p>Выберите категорию</p>
           <select
             value={editPosition}
             onChange={(e) => setEditPosition(e.target.value)}
@@ -163,12 +164,14 @@ export default function Offers() {
               </option>
             ))}
           </select>
+          <p>Выберите позицию</p>
           <input
             type="number"
             placeholder="Новое число позиции (необязательно)"
             value={newPosition}
             onChange={(e) => setNewPosition(e.target.value)}
           />
+          <p>Выберите новую категорию</p>
           <input
             type="text"
             placeholder="Новое название категории (необязательно)"
@@ -182,7 +185,8 @@ export default function Offers() {
 
         {/* Удаление предложения */}
         <div className="delete-offer">
-          <h3>Удаление предложения</h3>
+          <p className="title">Удаление предложения</p>
+          <p>Выберите категорию</p>
           <select
             value={deletePosition}
             onChange={(e) => setDeletePosition(e.target.value)}

@@ -92,13 +92,6 @@ const CreateCategoryManagement = () => {
       <p className="title top">Создание категории</p>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <div>
-        <p>Название категории</p>
-        <input
-          type="text"
-          placeholder="Название категории"
-          value={categoryName}
-          onChange={(e) => setCategoryName(e.target.value)}
-        />
         <p>Раздел категории</p>
         <div className="list-editing">
           <input
@@ -121,7 +114,20 @@ const CreateCategoryManagement = () => {
             </ul>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <p>Название категории</p>
+        <input
+          type="text"
+          placeholder="Название категории"
+          value={categoryName}
+          onChange={(e) => setCategoryName(e.target.value)}
+        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: "0.5rem",
+          }}
+        >
           <div className="photo-editing">
             {image ? (
               <img

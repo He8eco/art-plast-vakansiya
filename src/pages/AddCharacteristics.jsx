@@ -46,7 +46,7 @@ const AddProductSpecifications = ({
 
   return (
     <div>
-      <h3>Неполные характеристики</h3>
+      <p>Неполные характеристики</p>
       {shortSpecs.map((spec, index) => (
         <div key={index}>
           <input
@@ -96,7 +96,7 @@ const AddProductSpecifications = ({
         *
       </button>
 
-      <h3>Полные характеристики</h3>
+      <p>Полные характеристики</p>
       {fullSpecs.map((spec, index) => (
         <div key={index}>
           <input

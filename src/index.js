@@ -6,13 +6,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAgmzMaAVieQKfFnus0O2cYi8Y6DhW3XF0",
-  authDomain: "art-plast.firebaseapp.com",
-  projectId: "art-plast",
-  storageBucket: "art-plast.appspot.com",
-  messagingSenderId: "645577513197",
-  appId: "1:645577513197:web:78d5e2e7bb099bab5d94e4",
-  measurementId: "G-BW5T65BWN0"
+  apiKey: "AIzaSyADjCL5CrhP0_BWysMtbP5kgDPB18xx93s",
+  authDomain: "reactchat-57854.firebaseapp.com",
+  projectId: "reactchat-57854",
+  storageBucket: "reactchat-57854.appspot.com",
+  messagingSenderId: "861258458667",
+  appId: "1:861258458667:web:f0290abbe8e3120b1c6c6e",
 };
 
 const app = initializeApp(firebaseConfig);

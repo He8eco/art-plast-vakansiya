@@ -15,11 +15,9 @@ import ProductDetails from "./pages/ProductDetails";
 import DeleteProduct from "./pages/DeleteProduct";
 import ManagePromotions from "./pages/ManagePromotions";
 import TemplateSpecifications from "./pages/TemplateSpecifications";
-import LoginPage from "./pages/LoginPage";
 import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import FavoritesPage from "./pages/FavoritePage";
-import Logout from "./pages/Logout";
 
 export default function App() {
   return (
@@ -39,77 +37,21 @@ export default function App() {
               <Route path="/favoritesPage" element={<FavoritesPage />} />
               <Route
                 path="/sectionManagement"
-                element={
-                  <ProtectedRoute>
-                    <SectionManagement />
-                  </ProtectedRoute>
-                }
+                element={<SectionManagement />}
               />
-              <Route
-                path="/offers"
-                element={
-                  <ProtectedRoute>
-                    <Offers />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/addProduct"
-                element={
-                  <ProtectedRoute>
-                    <AddProduct />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/editProduct"
-                element={
-                  <ProtectedRoute>
-                    <EditProduct />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/deleteProduct"
-                element={
-                  <ProtectedRoute>
-                    <DeleteProduct />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/offers" element={<Offers />} />
+              <Route path="/addProduct" element={<AddProduct />} />
+              <Route path="/editProduct" element={<EditProduct />} />
+              <Route path="/deleteProduct" element={<DeleteProduct />} />
               <Route
                 path="/categoryManagement"
-                element={
-                  <ProtectedRoute>
-                    <CategoryManagement />
-                  </ProtectedRoute>
-                }
+                element={<CategoryManagement />}
               />
-              <Route
-                path="/managePromotions"
-                element={
-                  <ProtectedRoute>
-                    <ManagePromotions />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/managePromotions" element={<ManagePromotions />} />
               <Route
                 path="/templateSpecifications"
-                element={
-                  <ProtectedRoute>
-                    <TemplateSpecifications />
-                  </ProtectedRoute>
-                }
+                element={<TemplateSpecifications />}
               />
-              <Route
-                path="/logout"
-                element={
-                  <ProtectedRoute>
-                    <Logout />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/loginPage" element={<LoginPage />} />
               <Route
                 path="/:sectionName/:categoryName"
                 element={<ProductsByCategory />}

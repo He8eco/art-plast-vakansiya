@@ -122,13 +122,6 @@ const PromotionBlock = ({
                 key={promotion.id}
                 to={`/${sectionName}/${promotion.categoryName}/${promotion.productId}`}
                 className="card"
-                style={
-                  (currentUser && {
-                    height: "17rem",
-                    width: "16rem",
-                    margin: "1rem",
-                  }) || { height: "16rem", margin: "1rem" }
-                }
               >
                 <FavoriteButton productId={promotion.productId} />
                 {promotion.mainImage ? (
@@ -158,9 +151,7 @@ const PromotionBlock = ({
                       </p>
                     )}
                   </div>
-                  {currentUser && (
                     <p className="position">Позиция: {promotion.position}</p>
-                  )}
                 </div>
               </Link>
             );

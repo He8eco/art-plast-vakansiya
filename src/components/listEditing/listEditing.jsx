@@ -68,16 +68,6 @@ export default function ListEditing() {
       >
         Шаблон характеристик
       </NavLink>
-      <NavLink
-        to="/Logout"
-        className={({ isActive, isPending }) =>
-          isPending ? "pending" : isActive ? "active" : ""
-        }
-      >
-        Выход
-      </NavLink>
-      <Link to="">Архив товаров</Link>
-      <Link to="">Добавление в архив</Link>
     </div>
   );
 }

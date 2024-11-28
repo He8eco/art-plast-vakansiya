@@ -129,7 +129,7 @@ const SectionManagement = () => {
       <div className="editing">
         <p className="title top">Управление разделами</p>
         <div>
-          <p>Создание раздела</p>
+          <p>Введите название раздела и позицию</p>
           <input
             type="text"
             placeholder="Название раздела"
@@ -148,7 +148,8 @@ const SectionManagement = () => {
         </button>
 
         <div>
-          <p>Редактирование раздела</p>
+          <p className="title">Редактирование раздела</p>
+          <p>Выберите раздел</p>
           <div className="list-editing">
             <input
               className="z"
@@ -170,6 +171,7 @@ const SectionManagement = () => {
               </ul>
             )}
           </div>
+          <p>Введите название раздела и позицию</p>
           <div>
             <input
               type="text"
@@ -198,7 +200,8 @@ const SectionManagement = () => {
         </div>
 
         <div>
-          <p>Удаление раздела</p>
+          <p className="title">Удаление раздела</p>
+          <p>Выберите раздел</p>
           <div className="list-editing">
             <input
               className="z"

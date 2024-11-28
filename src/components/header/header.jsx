@@ -2,11 +2,9 @@ import { Link } from "react-router-dom";
 import Search from "../UI/search/search";
 import "./header.css";
 import CatalogComponent from "../CatalogComponent";
-import { useContext, useState, useEffect, useRef } from "react";
-import { AuthContext } from "../../AuthContext";
+import { useState, useEffect, useRef } from "react";
 
 export default function Header() {
-  const { currentUser } = useContext(AuthContext);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 967);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const infoRef = useRef(null);
@@ -130,7 +128,7 @@ export default function Header() {
           <>
             <Link to="/about">Главная</Link>
             <Link to="/FavoritesPage">Избранное</Link>
-            {currentUser && <Link to="/SectionManagement">Редактирование</Link>}
+            <Link to="/SectionManagement">Редактирование</Link>
           </>
         )}
 
@@ -169,23 +167,21 @@ export default function Header() {
                 />
               </svg>
             </Link>
-            {currentUser && (
-              <Link to="/SectionManagement">
-                <svg
-                  width="3rem"
-                  height="3rem"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                >
-                  <path
-                    fill="#fff"
-                    fill-rule="evenodd"
-                    d="M15.198 3.52a1.612 1.612 0 012.223 2.336L6.346 16.421l-2.854.375 1.17-3.272L15.197 3.521zm3.725-1.322a3.612 3.612 0 00-5.102-.128L3.11 12.238a1 1 0 00-.253.388l-1.8 5.037a1 1 0 001.072 1.328l4.8-.63a1 1 0 00.56-.267L18.8 7.304a3.612 3.612 0 00.122-5.106zM12 17a1 1 0 100 2h6a1 1 0 100-2h-6z"
-                  />
-                </svg>
-              </Link>
-            )}
+            <Link to="/SectionManagement">
+              <svg
+                width="3rem"
+                height="3rem"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+              >
+                <path
+                  fill="#fff"
+                  fill-rule="evenodd"
+                  d="M15.198 3.52a1.612 1.612 0 012.223 2.336L6.346 16.421l-2.854.375 1.17-3.272L15.197 3.521zm3.725-1.322a3.612 3.612 0 00-5.102-.128L3.11 12.238a1 1 0 00-.253.388l-1.8 5.037a1 1 0 001.072 1.328l4.8-.63a1 1 0 00.56-.267L18.8 7.304a3.612 3.612 0 00.122-5.106zM12 17a1 1 0 100 2h6a1 1 0 100-2h-6z"
+                />
+              </svg>
+            </Link>
           </>
         )}
       </div>

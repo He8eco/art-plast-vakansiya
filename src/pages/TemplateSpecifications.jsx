@@ -183,7 +183,7 @@ export default function TemplateSpecifications() {
       <ListEditing />
       <div className="editing">
         {/* Создание шаблона */}
-        <h2>Создание шаблона характеристик</h2>
+        <p className="title top">Создание шаблона характеристик</p>
         <p>Название категории</p>
         <div className="list-editing">
           <input
@@ -220,7 +220,7 @@ export default function TemplateSpecifications() {
         </button>
 
         {/* Редактирование шаблона */}
-        <h2>Редактирование шаблона характеристик</h2>
+        <p className="title">Редактирование шаблона характеристик</p>
         <p>Название категории</p>
         <div className="list-editing">
           <input
@@ -263,7 +263,7 @@ export default function TemplateSpecifications() {
         )}
 
         {/* Удаление шаблона */}
-        <h2>Удаление шаблона характеристик</h2>
+        <p className="title">Удаление шаблона характеристик</p>
         <p>Название категории</p>
         <div className="list-editing">
           <input

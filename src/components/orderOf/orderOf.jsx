@@ -1,14 +1,12 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { collection, query, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../../index.js";
 import { Link } from "react-router-dom";
 import "./orderOf.css";
-import { AuthContext } from "../../AuthContext.jsx";
 
 const OrderOf = () => {
   const [offers, setOffers] = useState([]);
   const [categories, setCategories] = useState({});
-  const { currentUser } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchOffers = () => {
@@ -51,16 +49,13 @@ const OrderOf = () => {
             to={`/categories/${offer.categoryName}`}
             key={offer.id}
             className="card"
-            style={currentUser && { height: "14rem" }}
           >
             <img
               src={categories[offer.categoryName] || ""}
               alt={offer.categoryName}
             />
             <p className="category-name">{offer.categoryName}</p>
-            {currentUser && (
-              <p className="position">Позиция: {offer.position}</p>
-            )}
+            <p className="position">Позиция: {offer.position}</p>
           </Link>
         ))}
       </div>

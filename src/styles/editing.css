@@ -1,3 +1,7 @@
+.editing {
+  margin-left: 1rem;
+}
+
 .editing input {
   width: 20rem;
   height: 2rem;
