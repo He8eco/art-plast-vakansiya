@@ -10,7 +10,7 @@ export default function Footer() {
           <p>art-plast.semik@yandex.ru</p>
           <p>г. Семикаракорск, ул. Калинина 138А</p>
         </section>
-        <section className="map">Яндекс.Карты (будут позже)</section>
+        <section className="map">Место для Яндекс.Карты</section>
       </div>
       <div className="footer__title">© Арт-Пласт 2024</div>
     </footer>
