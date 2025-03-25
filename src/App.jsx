@@ -25,7 +25,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Header />
-
+          /*без логина */
           <div className="main">
             <Routes>
               <Route path="/" element={<About />} />
