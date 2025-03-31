@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../index.js";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import ReactSlider from "react-slider";
 import "../styles/productsByCategory.css";
-import fourSquares from "../img/fourSquares.svg";
 import Breadcrumb from "../components/UI/BreadCrumb.jsx";
 import FavoriteButton from "../components/UI/FavoriteButton.jsx";
 

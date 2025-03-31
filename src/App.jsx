@@ -16,7 +16,6 @@ import DeleteProduct from "./pages/DeleteProduct";
 import ManagePromotions from "./pages/ManagePromotions";
 import TemplateSpecifications from "./pages/TemplateSpecifications";
 import { AuthProvider } from "./AuthContext";
-import ProtectedRoute from "./ProtectedRoute";
 import FavoritesPage from "./pages/FavoritePage";
 
 export default function App() {
@@ -25,7 +24,6 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Header />
-          /*без логина */
           <div className="main">
             <Routes>
               <Route path="/" element={<About />} />

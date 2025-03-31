@@ -3,7 +3,6 @@ import Banner from "../components/banner/banner";
 import OrderOf from "../components/orderOf/orderOf";
 import Promotions from "../components/promotions/Promotions";
 import SectionsList from "../components/listSections/listSections";
-import CatalogComponent from "../components/CatalogComponent";
 
 export default function About() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 967);

@@ -15,24 +15,24 @@ const PromotionBlock = ({
   const totalProducts = promotionsArray.length;
 
   // Функция для вычисления количества видимых карточек
-  const calculateVisibleCount = () => {
-    const screenWidth = window.innerWidth;
-    const rootFontSizeStr = window
-      .getComputedStyle(document.documentElement)
-      .getPropertyValue("font-size");
-    const rootFontSize = parseFloat(rootFontSizeStr); // Размер `1rem` в пикселях
-
-    const cardWidthRem = 16; // Ширина карточки в rem
-    const cardMarginRem = 1; // Отступ между карточками в rem
-    const cardTotalWidthRem = cardWidthRem + cardMarginRem;
-
-    const cardTotalWidthPx = cardTotalWidthRem * rootFontSize; // Полная ширина карточки в пикселях
-
-    const maxVisibleCards = Math.floor(screenWidth / cardTotalWidthPx);
-    return Math.min(Math.max(maxVisibleCards, 1), totalProducts);
-  };
 
   useEffect(() => {
+    const calculateVisibleCount = () => {
+      const screenWidth = window.innerWidth;
+      const rootFontSizeStr = window
+        .getComputedStyle(document.documentElement)
+        .getPropertyValue("font-size");
+      const rootFontSize = parseFloat(rootFontSizeStr); // Размер `1rem` в пикселях
+
+      const cardWidthRem = 16; // Ширина карточки в rem
+      const cardMarginRem = 1; // Отступ между карточками в rem
+      const cardTotalWidthRem = cardWidthRem + cardMarginRem;
+
+      const cardTotalWidthPx = cardTotalWidthRem * rootFontSize; // Полная ширина карточки в пикселях
+
+      const maxVisibleCards = Math.floor(screenWidth / cardTotalWidthPx);
+      return Math.min(Math.max(maxVisibleCards, 1), totalProducts);
+    };
     // Обработчик изменения размера окна
     const handleResize = () => {
       const visibleCount = calculateVisibleCount();
@@ -151,7 +151,7 @@ const PromotionBlock = ({
                       </p>
                     )}
                   </div>
-                    <p className="position">Позиция: {promotion.position}</p>
+                  <p className="position">Позиция: {promotion.position}</p>
                 </div>
               </Link>
             );

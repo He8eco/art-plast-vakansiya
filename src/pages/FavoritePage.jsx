@@ -7,8 +7,6 @@ import FavoriteButton from "../components/UI/FavoriteButton";
 
 const FavoritesPage = () => {
   const [favoriteProducts, setFavoriteProducts] = useState([]);
-  const [sectionName, setSectionName] = useState("");
-  const [categoryName, setCategoryName] = useState("");
 
   useEffect(() => {
     const fetchFavoriteProducts = async () => {

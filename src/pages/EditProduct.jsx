@@ -7,7 +7,6 @@ import {
   getDocs,
   doc,
   updateDoc,
-  getDoc,
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import AddProductSpecifications from "./AddCharacteristics.jsx";

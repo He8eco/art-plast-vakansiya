@@ -8,7 +8,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../../index.js";
-import { Link } from "react-router-dom";
 import "./promotions.css";
 import { AuthContext } from "../../AuthContext.jsx";
 import PromotionBlock from "../PromotionBlock.jsx";
