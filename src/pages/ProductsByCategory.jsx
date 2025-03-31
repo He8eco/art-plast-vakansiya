@@ -107,7 +107,6 @@ const ProductsByCategory = () => {
       priceRange.max,
     ];
 
-    // Фильтрация по цене с учетом скидки
     tempProducts = tempProducts.filter((product) => {
       const priceToFilter = product.discount || product.price;
       return priceToFilter >= minSliderValue && priceToFilter <= maxSliderValue;
