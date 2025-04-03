@@ -127,7 +127,7 @@ const SectionManagement = () => {
     <div className="flex">
       <ListEditing></ListEditing>
       <div className="editing">
-        <p className="title top">Управление разделами</p>
+        <p className="title top">Создание раздела</p>
         <div>
           <p>Введите название раздела и позицию</p>
           <input

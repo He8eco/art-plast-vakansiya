@@ -18,25 +18,25 @@
 
 @media screen and (min-width: 2142px) and (max-width: 2400px) {
   * {
-    font-size: 27.5px;
+    font-size: 27px;
   }
 }
 
 @media screen and (min-width: 1921px) and (max-width: 2141px) {
   * {
-    font-size: 25px;
+    font-size: 24px;
   }
 }
 
 @media screen and (min-width: 1681px) and (max-width: 1920px) {
   * {
-    font-size: 22.8px;
+    font-size: 21.4px;
   }
 }
 
 @media screen and (min-width: 1481px) and (max-width: 1680px) {
   * {
-    font-size: 19.75px;
+    font-size: 19px;
   }
 }
 

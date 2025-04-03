@@ -12,7 +12,7 @@ export default function Footer() {
         </section>
         <section className="map">Место для Яндекс.Карты</section>
       </div>
-      <div className="footer__title">© Арт-Пласт 2024</div>
+      <div className="footer__title">© Арт-Пласт 2025</div>
     </footer>
   );
 }

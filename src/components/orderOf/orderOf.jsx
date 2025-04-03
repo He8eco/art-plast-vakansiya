@@ -43,7 +43,7 @@ const OrderOf = () => {
     <div className="order-of">
       <p className="order-title">Рекомендуемые категории</p>
 
-      <div className="widthSectionCard flex">
+      <div className="widthSectionCard">
         {sortedOffers.map((offer) => (
           <Link
             to={`/categories/${offer.categoryName}`}
@@ -55,7 +55,6 @@ const OrderOf = () => {
               alt={offer.categoryName}
             />
             <p className="category-name">{offer.categoryName}</p>
-            <p className="position">Позиция: {offer.position}</p>
           </Link>
         ))}
       </div>

@@ -13,7 +13,6 @@
 
 .order-of .card {
   height: 14rem;
-  margin-right: 2rem;
 }
 @media (max-width: 768px) {
   .order-of .order-title {

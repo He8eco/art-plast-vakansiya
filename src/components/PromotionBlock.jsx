@@ -151,7 +151,6 @@ const PromotionBlock = ({
                       </p>
                     )}
                   </div>
-                  <p className="position">Позиция: {promotion.position}</p>
                 </div>
               </Link>
             );
