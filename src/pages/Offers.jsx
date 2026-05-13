@@ -1,112 +1,153 @@
-import React, { useState, useEffect } from "react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "../index.js";
-import ListEditing from "../components/listEditing/listEditing";
-import "../styles/editing.css";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import ListEditing from '../components/listEditing/listEditing'
+import '../styles/editing.css'
 
 export default function Offers() {
-  const [categoryName, setCategoryName] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [position, setPosition] = useState("");
-  const [showCategoryList, setShowCategoryList] = useState(false);
+  const [categoryName, setCategoryName] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [filteredCategories, setFilteredCategories] = useState([])
+  const [position, setPosition] = useState('')
+  const [showCategoryList, setShowCategoryList] = useState(false)
 
   // Для редактирования и удаления
-  const [offers, setOffers] = useState([]);
-  const [editPosition, setEditPosition] = useState("");
-  const [newPosition, setNewPosition] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [deletePosition, setDeletePosition] = useState("");
+  const [offers, setOffers] = useState([])
+  const [editPosition, setEditPosition] = useState('')
+  const [newPosition, setNewPosition] = useState('')
+  const [newCategory, setNewCategory] = useState('')
+  const [deletePosition, setDeletePosition] = useState('')
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const categoryCollection = collection(db, "categories");
-      const categorySnapshot = await getDocs(categoryCollection);
-      const categoryList = categorySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCategories(categoryList);
-      setFilteredCategories(categoryList);
-    };
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    const fetchOffers = async () => {
-      const offersCollection = collection(db, "offers");
-      const offersSnapshot = await getDocs(offersCollection);
-      const offersList = offersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setOffers(offersList);
-    };
-
-    fetchCategories();
-    fetchOffers();
-  }, []);
-
-  const handleCategorySearch = (name) => {
-    setCategoryName(name);
-    const filtered = categories.filter((category) =>
-      category.name.toLowerCase().includes(name.toLowerCase())
-    );
-    setFilteredCategories(filtered);
-    setShowCategoryList(name.length > 0 && filtered.length > 0);
-  };
-
-  const handleCategorySelect = (category) => {
-    setCategoryName(category.name);
-    setShowCategoryList(false);
-  };
-
-  const handleAddOffer = async () => {
-    if (!categoryName || !position) {
-      alert("Пожалуйста, заполните все поля");
-      return;
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
     }
 
-    const selectedCategory = categories.find(
-      (category) => category.name === categoryName
-    );
+    setCategories(data)
+    setFilteredCategories(data)
+  }
+  const fetchOffers = async () => {
+    const { data, error } = await supabase
+      .from('offers')
+      .select('*')
+      .order('position', { ascending: true })
 
-    await addDoc(collection(db, "offers"), {
-      categoryName: categoryName,
-      position: position,
+    if (error) {
+      console.error('Error fetching offers:', error)
+      return
+    }
+
+    setOffers(data)
+  }
+  useEffect(() => {
+    fetchCategories()
+    fetchOffers()
+  }, [])
+
+  const handleCategorySearch = (name) => {
+    setCategoryName(name)
+    const filtered = categories.filter((category) =>
+      category.name.toLowerCase().includes(name.toLowerCase())
+    )
+    setFilteredCategories(filtered)
+    setShowCategoryList(name.length > 0 && filtered.length > 0)
+  }
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category)
+    setCategoryName(category.name)
+    setShowCategoryList(false)
+  }
+
+  const handleAddOffer = async () => {
+    if (!selectedCategory || !position) {
+      alert('Пожалуйста, заполните все поля')
+      return
+    }
+
+    const { error } = await supabase.from('offers').insert({
+      category_id: selectedCategory.id,
+      category_name: selectedCategory.name,
+      position: Number(position),
       image: selectedCategory.image,
-    });
+    })
 
-    setCategoryName("");
-    setPosition("");
-  };
+    if (error) {
+      console.error('Error adding offer:', error)
+      return
+    }
+
+    setCategoryName('')
+    setSelectedCategory(null)
+    setPosition('')
+
+    await fetchOffers()
+  }
 
   const handleEditOffer = async () => {
-    if (!editPosition) return;
+    if (!editPosition) return
 
-    const offerRef = doc(db, "offers", editPosition);
-    const newOfferData = {};
+    const newOfferData = {}
 
-    if (newPosition) newOfferData.position = newPosition;
-    if (newCategory) newOfferData.categoryName = newCategory;
+    if (newPosition) {
+      newOfferData.position = Number(newPosition)
+    }
 
-    await updateDoc(offerRef, newOfferData);
-    setEditPosition("");
-    setNewPosition("");
-    setNewCategory("");
-  };
+    if (newCategory) {
+      const foundCategory = categories.find(
+        (category) => category.name.toLowerCase() === newCategory.toLowerCase()
+      )
+
+      if (!foundCategory) {
+        alert('Категория не найдена')
+        return
+      }
+
+      newOfferData.category_id = foundCategory.id
+      newOfferData.category_name = foundCategory.name
+      newOfferData.image = foundCategory.image
+    }
+
+    const { error } = await supabase
+      .from('offers')
+      .update(newOfferData)
+      .eq('id', editPosition)
+
+    if (error) {
+      console.error('Error updating offer:', error)
+      return
+    }
+
+    setEditPosition('')
+    setNewPosition('')
+    setNewCategory('')
+
+    await fetchOffers()
+  }
 
   const handleDeleteOffer = async () => {
-    if (!deletePosition) return;
+    if (!deletePosition) return
 
-    const offerRef = doc(db, "offers", deletePosition);
-    await deleteDoc(offerRef);
-    setDeletePosition("");
-  };
+    const { error } = await supabase
+      .from('offers')
+      .delete()
+      .eq('id', deletePosition)
+
+    if (error) {
+      console.error('Error deleting offer:', error)
+      return
+    }
+
+    setDeletePosition('')
+
+    await fetchOffers()
+  }
 
   return (
     <div className="flex">
@@ -160,7 +201,7 @@ export default function Offers() {
             <option value="">Выберите предложение для редактирования</option>
             {offers.map((offer) => (
               <option key={offer.id} value={offer.id}>
-                Позиция: {offer.position} - Категория: {offer.categoryName}
+                Позиция: {offer.position} - Категория: {offer.category_name}
               </option>
             ))}
           </select>
@@ -194,7 +235,7 @@ export default function Offers() {
             <option value="">Выберите предложение для удаления</option>
             {offers.map((offer) => (
               <option key={offer.id} value={offer.id}>
-                Позиция: {offer.position} - Категория: {offer.categoryName}
+                Позиция: {offer.position} - Категория: {offer.category_name}
               </option>
             ))}
           </select>
@@ -205,5 +246,5 @@ export default function Offers() {
         </div>
       </div>
     </div>
-  );
+  )
 }

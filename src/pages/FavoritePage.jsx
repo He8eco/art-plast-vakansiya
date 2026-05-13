@@ -1,46 +1,85 @@
 // FavoritesPage.jsx
-import React, { useEffect, useState } from "react";
-import { db } from "../index.js"; // Путь к вашей конфигурации Firebase
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { Link } from "react-router-dom";
-import FavoriteButton from "../components/UI/FavoriteButton";
+import React, { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { Link } from 'react-router-dom'
+import FavoriteButton from '../components/UI/FavoriteButton'
 
 const FavoritesPage = () => {
-  const [favoriteProducts, setFavoriteProducts] = useState([]);
+  const [favoriteProducts, setFavoriteProducts] = useState([])
 
   useEffect(() => {
     const fetchFavoriteProducts = async () => {
-      const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+      const favorites = JSON.parse(localStorage.getItem('favorites')) || []
 
       if (favorites.length === 0) {
-        setFavoriteProducts([]);
-        return;
+        setFavoriteProducts([])
+        return
       }
 
-      const productsRef = collection(db, "product");
-      const products = [];
+      try {
+        const { data: productsData, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', favorites)
 
-      // Разбиваем массив favorites на подмассивы по 10 элементов
-      const chunkSize = 10;
-      for (let i = 0; i < favorites.length; i += chunkSize) {
-        const chunk = favorites.slice(i, i + chunkSize);
-        const q = query(productsRef, where("__name__", "in", chunk));
-        const querySnapshot = await getDocs(q);
+        if (productsError) {
+          throw productsError
+        }
 
-        querySnapshot.forEach((doc) => {
-          products.push({ id: doc.id, ...doc.data() });
-        });
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*')
+
+        if (categoriesError) {
+          throw categoriesError
+        }
+
+        const { data: sectionsData, error: sectionsError } = await supabase
+          .from('sections')
+          .select('*')
+
+        if (sectionsError) {
+          throw sectionsError
+        }
+
+        const sectionNameById = {}
+
+        sectionsData.forEach((section) => {
+          sectionNameById[section.id] = section.name
+        })
+
+        const categoryById = {}
+
+        categoriesData.forEach((category) => {
+          categoryById[category.id] = {
+            ...category,
+            sectionName: sectionNameById[category.section_id] || '',
+          }
+        })
+
+        const productsWithRoutes = productsData.map((product) => {
+          const category = categoryById[product.category_id]
+
+          return {
+            ...product,
+            sectionName: category?.sectionName || '',
+            categoryName: category?.name || product.category_name || '',
+          }
+        })
+
+        setFavoriteProducts(productsWithRoutes)
+      } catch (error) {
+        console.error('Ошибка при получении избранных товаров:', error)
       }
+    }
 
-      setFavoriteProducts(products);
-    };
-
-    fetchFavoriteProducts();
-  }, []);
+    fetchFavoriteProducts()
+  }, [])
 
   return (
     <div className="favorites-page">
       <h2>Избранные товары</h2>
+
       {favoriteProducts.length === 0 ? (
         <p>У вас нет избранных товаров.</p>
       ) : (
@@ -51,29 +90,32 @@ const FavoritesPage = () => {
               to={`/${product.sectionName}/${product.categoryName}/${product.id}`}
               className="card"
             >
-              <div style={{ position: "relative" }}>
-                {product.mainImage && (
+              <div style={{ position: 'relative' }}>
+                {product.main_image && (
                   <img
                     className="product-photo"
-                    src={product.mainImage}
+                    src={product.main_image}
                     alt={product.name}
                   />
                 )}
-                {/* Кнопка избранного */}
+
                 <FavoriteButton productId={product.id} />
               </div>
+
               <div className="product-values">
                 <p className="product-name">
-                  {product.companyName} {product.name}
+                  {product.company_name} {product.name}
                 </p>
+
                 <div>
                   <p
                     className={`product-price ${
-                      product.discount ? "product-price-none" : ""
+                      product.discount ? 'product-price-none' : ''
                     }`}
                   >
                     {product.price} ₽
                   </p>
+
                   {product.discount && (
                     <p className="product-discount-price">
                       {product.discount} ₽
@@ -86,7 +128,7 @@ const FavoritesPage = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default FavoritesPage;
+export default FavoritesPage

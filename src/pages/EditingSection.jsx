@@ -1,127 +1,136 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../index.js";
-import {
-  collection,
-  addDoc,
-  query,
-  onSnapshot,
-  deleteDoc,
-  doc,
-  updateDoc,
-  orderBy,
-} from "firebase/firestore";
-import ListEditing from "../components/listEditing/listEditing.jsx";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient.js'
+import ListEditing from '../components/listEditing/listEditing.jsx'
 
 const SectionManagement = () => {
-  const [sectionName, setSectionName] = useState("");
-  const [sectionPosition, setSectionPosition] = useState(""); // Поле для позиции
-  const [sections, setSections] = useState([]);
-  const [filteredSectionsForEdit, setFilteredSectionsForEdit] = useState([]);
-  const [filteredSectionsForDelete, setFilteredSectionsForDelete] = useState(
-    []
-  );
-  const [searchTermForEdit, setSearchTermForEdit] = useState("");
-  const [searchTermForDelete, setSearchTermForDelete] = useState("");
-  const [editingSectionId, setEditingSectionId] = useState(null);
-  const [newSectionName, setNewSectionName] = useState("");
-  const [newSectionPosition, setNewSectionPosition] = useState(""); // Новая позиция при редактировании
+  const [sectionName, setSectionName] = useState('')
+  const [sectionPosition, setSectionPosition] = useState('') // Поле для позиции
+  const [sections, setSections] = useState([])
+  const [filteredSectionsForEdit, setFilteredSectionsForEdit] = useState([])
+  const [filteredSectionsForDelete, setFilteredSectionsForDelete] = useState([])
+  const [searchTermForEdit, setSearchTermForEdit] = useState('')
+  const [searchTermForDelete, setSearchTermForDelete] = useState('')
+  const [editingSectionId, setEditingSectionId] = useState(null)
+  const [newSectionName, setNewSectionName] = useState('')
+  const [newSectionPosition, setNewSectionPosition] = useState('')
+  const [deletingSectionId, setDeletingSectionId] = useState(null)
 
+  const fetchSections = async () => {
+    const { data, error } = await supabase
+      .from('sections')
+      .select('*')
+      .order('position', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching sections:', error)
+      return
+    }
+
+    setSections(data)
+  }
   // Получение разделов из базы данных, отсортированных по `position`
   useEffect(() => {
-    const fetchSections = async () => {
-      const q = query(collection(db, "sections"), orderBy("position", "asc"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const sectionsList = [];
-        querySnapshot.forEach((doc) => {
-          sectionsList.push({ id: doc.id, ...doc.data() });
-        });
-        setSections(sectionsList);
-      });
-      return () => unsubscribe();
-    };
-    fetchSections();
-  }, []);
+    fetchSections()
+  }, [])
 
   const handleAddSection = async () => {
-    if (!sectionName || !sectionPosition) return;
+    if (!sectionName || !sectionPosition) return
 
     try {
-      await addDoc(collection(db, "sections"), {
+      const { error } = await supabase.from('sections').insert({
         name: sectionName,
-        position: parseInt(sectionPosition), // Преобразование позиции в число
-      });
-      setSectionName("");
-      setSectionPosition("");
+        position: parseInt(sectionPosition),
+      })
+
+      if (error) {
+        throw error
+      }
+
+      setSectionName('')
+      setSectionPosition('')
+      fetchSections()
     } catch (error) {
-      console.error("Error adding section: ", error);
+      console.error('Error adding section:', error)
     }
-  };
+  }
 
   const handleSearchSectionsForEdit = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
+    const searchTerm = e.target.value.toLowerCase()
     const filtered = sections.filter((section) =>
       section.name.toLowerCase().includes(searchTerm)
-    );
-    setFilteredSectionsForEdit(filtered);
-    setSearchTermForEdit(searchTerm);
-  };
+    )
+    setFilteredSectionsForEdit(filtered)
+    setSearchTermForEdit(searchTerm)
+  }
 
   const handleSearchSectionsForDelete = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
+    const searchTerm = e.target.value.toLowerCase()
     const filtered = sections.filter((section) =>
       section.name.toLowerCase().includes(searchTerm)
-    );
-    setFilteredSectionsForDelete(filtered);
-    setSearchTermForDelete(searchTerm);
-  };
+    )
+    setFilteredSectionsForDelete(filtered)
+    setSearchTermForDelete(searchTerm)
+  }
 
   const handleSelectSectionForEdit = (section) => {
-    setSearchTermForEdit(section.name);
-    setFilteredSectionsForEdit([]);
-    setEditingSectionId(section.id);
-    setNewSectionName(section.name);
-    setNewSectionPosition(section.position);
-  };
+    setSearchTermForEdit(section.name)
+    setFilteredSectionsForEdit([])
+    setEditingSectionId(section.id)
+    setNewSectionName(section.name)
+    setNewSectionPosition(section.position)
+  }
 
   const handleSelectSectionForDelete = (section) => {
-    setSearchTermForDelete(section.name);
-    setFilteredSectionsForDelete([]);
-  };
+    setSearchTermForDelete(section.name)
+    setFilteredSectionsForDelete([])
+    setDeletingSectionId(section.id)
+  }
 
   const handleDeleteSection = async () => {
     try {
-      const sectionToDelete = sections.find(
-        (section) =>
-          section.name.toLowerCase() === searchTermForDelete.toLowerCase()
-      );
+      const { error } = await supabase
+        .from('sections')
+        .delete()
+        .eq('id', deletingSectionId)
 
-      if (sectionToDelete) {
-        await deleteDoc(doc(db, "sections", sectionToDelete.id));
+      if (error) {
+        throw error
       }
-      setSearchTermForDelete("");
+
+      setSearchTermForDelete('')
+      setDeletingSectionId(null)
+      fetchSections()
     } catch (error) {
-      console.error("Error deleting section: ", error);
+      console.error('Error deleting section: ', error)
     }
-  };
+  }
 
   const handleEditSection = async () => {
-    if (!editingSectionId || !newSectionName || !newSectionPosition) return;
+    if (!editingSectionId || !newSectionName || !newSectionPosition) return
 
     try {
-      const sectionRef = doc(db, "sections", editingSectionId);
-      await updateDoc(sectionRef, {
-        name: newSectionName,
-        position: parseInt(newSectionPosition),
-      });
+      const { error } = await supabase
+        .from('sections')
+        .update({
+          name: newSectionName,
+          position: parseInt(newSectionPosition),
+        })
+        .eq('id', editingSectionId)
 
-      setEditingSectionId(null);
-      setNewSectionName("");
-      setNewSectionPosition("");
-      setSearchTermForEdit("");
+      if (error) {
+        throw error
+      }
+
+      setEditingSectionId(null)
+      setNewSectionName('')
+      setNewSectionPosition('')
+      setSearchTermForEdit('')
+
+      fetchSections()
     } catch (error) {
-      console.error("Error updating section: ", error);
+      console.error('Error updating section: ', error)
     }
-  };
+  }
 
   return (
     <div className="flex">
@@ -224,12 +233,16 @@ const SectionManagement = () => {
             )}
           </div>
         </div>
-        <button className="button-editing" onClick={handleDeleteSection}>
+        <button
+          className="button-editing"
+          onClick={handleDeleteSection}
+          disabled={!deletingSectionId}
+        >
           Удалить раздел
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SectionManagement;
+export default SectionManagement

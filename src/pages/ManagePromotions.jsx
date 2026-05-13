@@ -1,220 +1,222 @@
-import React, { useState, useEffect } from "react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "../index.js";
-import ListEditing from "../components/listEditing/listEditing";
-import "../styles/editing.css";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import ListEditing from '../components/listEditing/listEditing'
+import '../styles/editing.css'
 
 export default function ManagePromotions() {
-  const [promotionType, setPromotionType] = useState(""); // Тип акции
-  const [promotionName, setPromotionName] = useState(""); // Название товара
-  const [products, setProducts] = useState([]); // Список всех товаров
-  const [filteredProducts, setFilteredProducts] = useState([]); // Отфильтрованные товары
-  const [position, setPosition] = useState(""); // Позиция товара в акции
-  const [showProductList, setShowProductList] = useState(false); // Показать список товаров
+  const [promotionType, setPromotionType] = useState('') // Тип акции
+  const [promotionName, setPromotionName] = useState('') // Название товара
+  const [products, setProducts] = useState([]) // Список всех товаров
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [filteredProducts, setFilteredProducts] = useState([]) // Отфильтрованные товары
+  const [position, setPosition] = useState('') // Позиция товара в акции
+  const [showProductList, setShowProductList] = useState(false) // Показать список товаров
 
   // Для редактирования акций
-  const [promotions, setPromotions] = useState([]); // Список акций
+  const [promotions, setPromotions] = useState([]) // Список акций
 
   // Состояния для редактирования акций
-  const [selectedPromotionType, setSelectedPromotionType] = useState(""); // Выбранный тип акции для редактирования
-  const [promotionProducts, setPromotionProducts] = useState([]); // Товары в выбранной акции
-  const [selectedPromotionProduct, setSelectedPromotionProduct] = useState(""); // Выбранный товар в акции
-  const [newPosition, setNewPosition] = useState(""); // Новая позиция
-  const [newPromotionType, setNewPromotionType] = useState(""); // Новый тип акции
+  const [selectedPromotionType, setSelectedPromotionType] = useState('') // Выбранный тип акции для редактирования
+  const [promotionProducts, setPromotionProducts] = useState([]) // Товары в выбранной акции
+  const [selectedPromotionProduct, setSelectedPromotionProduct] = useState('') // Выбранный товар в акции
+  const [newPosition, setNewPosition] = useState('') // Новая позиция
+  const [newPromotionType, setNewPromotionType] = useState('') // Новый тип акции
 
   // Состояния для удаления акций
-  const [deletePromotionType, setDeletePromotionType] = useState(""); // Выбранный тип акции для удаления
-  const [deletePromotionProducts, setDeletePromotionProducts] = useState([]); // Товары в выбранной акции для удаления
+  const [deletePromotionType, setDeletePromotionType] = useState('') // Выбранный тип акции для удаления
+  const [deletePromotionProducts, setDeletePromotionProducts] = useState([]) // Товары в выбранной акции для удаления
   const [selectedDeletePromotionProduct, setSelectedDeletePromotionProduct] =
-    useState(""); // Выбранный товар для удаления
+    useState('') // Выбранный товар для удаления
 
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching products:', error)
+      return
+    }
+
+    setProducts(data)
+    setFilteredProducts(data)
+  }
+
+  const fetchPromotions = async () => {
+    const { data, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('position', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching promotions:', error)
+      return
+    }
+
+    setPromotions(data)
+  }
   useEffect(() => {
-    // Загружаем товары из базы данных
-    const fetchProducts = async () => {
-      const productCollection = collection(db, "product");
-      const productSnapshot = await getDocs(productCollection);
-      const productList = productSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productList);
-      setFilteredProducts(productList);
-    };
-
-    // Загружаем все акции из базы данных
-    const fetchPromotions = async () => {
-      const promotionsCollection = collection(db, "promotions");
-      const promotionsSnapshot = await getDocs(promotionsCollection);
-      const promotionsList = promotionsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setPromotions(promotionsList);
-    };
-
-    fetchProducts();
-    fetchPromotions();
-  }, []);
-
+    fetchProducts()
+    fetchPromotions()
+  }, [])
   // Функция для поиска товара по названию
   const handleProductSearch = (name) => {
-    setPromotionName(name);
+    setPromotionName(name)
+
     const filtered = products.filter(
       (product) =>
         product.name.toLowerCase().includes(name.toLowerCase()) ||
-        product.companyName.toLowerCase().includes(name.toLowerCase())
-    );
-    setFilteredProducts(filtered);
-    setShowProductList(name.length > 0 && filtered.length > 0);
-  };
+        product.company_name?.toLowerCase().includes(name.toLowerCase())
+    )
+
+    setFilteredProducts(filtered)
+    setShowProductList(name.length > 0 && filtered.length > 0)
+  }
 
   // Функция для выбора товара из списка
   const handleProductSelect = (product) => {
-    setPromotionName(product.name);
-    setShowProductList(false);
-  };
+    setSelectedProduct(product)
+    setPromotionName(`${product.company_name || ''} ${product.name || ''}`)
+    setShowProductList(false)
+  }
 
   // Функция для добавления товара в акцию
   const handleAddPromotion = async () => {
-    if (!promotionType || !promotionName || !position) {
-      alert("Пожалуйста, заполните все поля");
-      return;
+    if (!promotionType || !selectedProduct || !position) {
+      alert('Пожалуйста, заполните все поля')
+      return
     }
 
-    // Находим выбранный товар по имени
-    const selectedProduct = products.find(
-      (product) => product.name === promotionName
-    );
-
-    if (!selectedProduct) {
-      alert("Выбранный товар не найден");
-      return;
-    }
-
-    // Добавляем новый товар в акцию с необходимыми данными
-    await addDoc(collection(db, "promotions"), {
-      productName: promotionName,
-      position: position,
-      mainImage: selectedProduct.mainImage,
-      promotionType: promotionType,
-      productId: selectedProduct.id,
-      categoryName: selectedProduct.categoryName,
+    const { error } = await supabase.from('promotions').insert({
+      product_name: selectedProduct.name,
+      position: Number(position),
+      main_image: selectedProduct.main_image,
+      promotion_type: promotionType,
+      product_id: selectedProduct.id,
+      category_name: selectedProduct.category_name,
       price: selectedProduct.price,
       discount: selectedProduct.discount,
-      companyName: selectedProduct.companyName,
-    });
+      company_name: selectedProduct.company_name,
+    })
 
-    // Очищаем поля после добавления
-    setPromotionName("");
-    setPosition("");
-    setPromotionType("");
+    if (error) {
+      console.error('Error adding promotion:', error)
+      return
+    }
 
-    // Обновляем список акций
-    const promotionsCollection = collection(db, "promotions");
-    const promotionsSnapshot = await getDocs(promotionsCollection);
-    const promotionsList = promotionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setPromotions(promotionsList);
-  };
+    setPromotionName('')
+    setPosition('')
+    setPromotionType('')
+    setSelectedProduct(null)
+    setShowProductList(false)
+
+    await fetchPromotions()
+  }
 
   // Обработчик выбора типа акции для редактирования
   const handlePromotionTypeSelect = (e) => {
-    const type = e.target.value;
-    setSelectedPromotionType(type);
-    setSelectedPromotionProduct(""); // Сбрасываем выбранный товар
-    setNewPosition("");
-    setNewPromotionType("");
+    const type = e.target.value
 
-    // Фильтруем акции по выбранному типу
+    setSelectedPromotionType(type)
+    setSelectedPromotionProduct('')
+    setNewPosition('')
+    setNewPromotionType('')
+
     const filteredPromotions = promotions.filter(
-      (promotion) => promotion.promotionType === type
-    );
-    setPromotionProducts(filteredPromotions);
-  };
+      (promotion) => promotion.promotion_type === type
+    )
+
+    setPromotionProducts(filteredPromotions)
+  }
 
   // Обработчик обновления акции
   const handleUpdatePromotion = async () => {
-    if (!selectedPromotionProduct) return;
+    if (!selectedPromotionProduct) return
 
-    const promotionRef = doc(db, "promotions", selectedPromotionProduct);
-    const updatedData = {};
+    const updatedData = {}
 
-    if (newPosition) updatedData.position = newPosition;
-    if (newPromotionType) updatedData.promotionType = newPromotionType;
+    if (newPosition) updatedData.position = Number(newPosition)
+    if (newPromotionType) updatedData.promotion_type = newPromotionType
 
-    await updateDoc(promotionRef, updatedData);
+    const { error } = await supabase
+      .from('promotions')
+      .update(updatedData)
+      .eq('id', selectedPromotionProduct)
 
-    // Сбрасываем поля после обновления
-    setNewPosition("");
-    setNewPromotionType("");
+    if (error) {
+      console.error('Error updating promotion:', error)
+      return
+    }
 
-    // Обновляем данные акций
-    const promotionsCollection = collection(db, "promotions");
-    const promotionsSnapshot = await getDocs(promotionsCollection);
-    const promotionsList = promotionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setPromotions(promotionsList);
+    setNewPosition('')
+    setNewPromotionType('')
 
-    // Обновляем список товаров в акции
-    const filteredPromotions = promotionsList.filter(
-      (promotion) => promotion.promotionType === selectedPromotionType
-    );
-    setPromotionProducts(filteredPromotions);
+    await fetchPromotions()
 
-    alert("Изменения успешно сохранены.");
-  };
+    const { data, error: fetchError } = await supabase
+      .from('promotions')
+      .select('*')
+      .eq('promotion_type', selectedPromotionType)
+      .order('position', { ascending: true })
+
+    if (fetchError) {
+      console.error('Error refreshing promotion products:', fetchError)
+      return
+    }
+
+    setPromotionProducts(data)
+
+    alert('Изменения успешно сохранены.')
+  }
 
   // Обработчик выбора типа акции для удаления
   const handleDeletePromotionTypeSelect = (e) => {
-    const type = e.target.value;
-    setDeletePromotionType(type);
-    setSelectedDeletePromotionProduct(""); // Сбрасываем выбранный товар
+    const type = e.target.value
 
-    // Фильтруем акции по выбранному типу
+    setDeletePromotionType(type)
+    setSelectedDeletePromotionProduct('')
+
     const filteredPromotions = promotions.filter(
-      (promotion) => promotion.promotionType === type
-    );
-    setDeletePromotionProducts(filteredPromotions);
-  };
+      (promotion) => promotion.promotion_type === type
+    )
+
+    setDeletePromotionProducts(filteredPromotions)
+  }
 
   // Функция для удаления товара из акции
   const handleDeletePromotion = async () => {
-    if (!selectedDeletePromotionProduct) return;
+    if (!selectedDeletePromotionProduct) return
 
-    const promotionRef = doc(db, "promotions", selectedDeletePromotionProduct);
-    await deleteDoc(promotionRef);
+    const { error } = await supabase
+      .from('promotions')
+      .delete()
+      .eq('id', selectedDeletePromotionProduct)
 
-    // Сбрасываем выбранные значения
-    setSelectedDeletePromotionProduct("");
+    if (error) {
+      console.error('Error deleting promotion:', error)
+      return
+    }
 
-    // Обновляем список акций
-    const promotionsCollection = collection(db, "promotions");
-    const promotionsSnapshot = await getDocs(promotionsCollection);
-    const promotionsList = promotionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setPromotions(promotionsList);
+    setSelectedDeletePromotionProduct('')
 
-    // Обновляем список товаров в акции для удаления
-    const filteredPromotions = promotionsList.filter(
-      (promotion) => promotion.promotionType === deletePromotionType
-    );
-    setDeletePromotionProducts(filteredPromotions);
+    await fetchPromotions()
 
-    alert("Товар успешно удален из акции.");
-  };
+    const { data, error: fetchError } = await supabase
+      .from('promotions')
+      .select('*')
+      .eq('promotion_type', deletePromotionType)
+      .order('position', { ascending: true })
+
+    if (fetchError) {
+      console.error('Error refreshing delete promotion products:', fetchError)
+      return
+    }
+
+    setDeletePromotionProducts(data)
+
+    alert('Товар успешно удален из акции.')
+  }
 
   return (
     <div className="flex">
@@ -253,7 +255,7 @@ export default function ManagePromotions() {
                   onClick={() => handleProductSelect(product)}
                 >
                   <div>
-                    {product.companyName} {product.name}
+                    {product.company_name} {product.name}
                   </div>
                 </li>
               ))}
@@ -301,7 +303,7 @@ export default function ManagePromotions() {
                 <option value="">Выберите товар</option>
                 {promotionProducts.map((promotion) => (
                   <option key={promotion.id} value={promotion.id}>
-                    Позиция: {promotion.position} - {promotion.productName}
+                    Позиция: {promotion.position} - {promotion.product_name}
                   </option>
                 ))}
               </select>
@@ -371,7 +373,7 @@ export default function ManagePromotions() {
                 <option value="">Выберите товар</option>
                 {deletePromotionProducts.map((promotion) => (
                   <option key={promotion.id} value={promotion.id}>
-                    Позиция: {promotion.position} - {promotion.productName}
+                    Позиция: {promotion.position} - {promotion.product_name}
                   </option>
                 ))}
               </select>
@@ -387,5 +389,5 @@ export default function ManagePromotions() {
         </div>
       </div>
     </div>
-  );
+  )
 }

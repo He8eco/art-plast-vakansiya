@@ -1,70 +1,81 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../index.js";
-import {
-  collection,
-  query,
-  onSnapshot,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import ListEditing from "../components/listEditing/listEditing.jsx";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import ListEditing from '../components/listEditing/listEditing.jsx'
 
 const DeleteProduct = () => {
-  const [productName, setProductName] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productName, setProductName] = useState('')
+  const [filteredProducts, setFilteredProducts] = useState([])
+  const [products, setProducts] = useState([])
+  const [selectedProduct, setSelectedProduct] = useState(null)
+
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Ошибка при загрузке товаров:', error)
+      return
+    }
+
+    setProducts(data)
+  }
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const q = query(collection(db, "product"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const productsList = [];
-        querySnapshot.forEach((doc) => {
-          productsList.push({ id: doc.id, ...doc.data() });
-        });
-        setProducts(productsList);
-      });
-      return () => unsubscribe();
-    };
-    fetchProducts();
-  }, []);
+    fetchProducts()
+  }, [])
 
   const handleProductSearch = (input) => {
-    setProductName(input);
+    setProductName(input)
+    setSelectedProduct(null)
 
-    if (input === "") {
-      setFilteredProducts([]);
-    } else {
-      const lowerInput = input.toLowerCase();
-      const filtered = products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(lowerInput) ||
-          product.companyName?.toLowerCase().includes(lowerInput)
-      );
-      setFilteredProducts(filtered);
+    if (input === '') {
+      setFilteredProducts([])
+      return
     }
-  };
+
+    const lowerInput = input.toLowerCase()
+
+    const filtered = products.filter(
+      (product) =>
+        product.name?.toLowerCase().includes(lowerInput) ||
+        product.company_name?.toLowerCase().includes(lowerInput)
+    )
+
+    setFilteredProducts(filtered)
+  }
 
   const handleProductSelect = (product) => {
-    setProductName(`${product.companyName} ${product.name}`);
-    setSelectedProduct(product);
-    setFilteredProducts([]);
-  };
+    setProductName(`${product.company_name || ''} ${product.name || ''}`)
+    setSelectedProduct(product)
+    setFilteredProducts([])
+  }
 
   const handleDeleteProduct = async () => {
-    if (selectedProduct) {
-      try {
-        await deleteDoc(doc(db, "product", selectedProduct.id));
-        setProductName("");
-        setFilteredProducts([]);
-        setSelectedProduct(null);
-        alert("Товар успешно удален");
-      } catch (error) {
-        console.error("Ошибка при удалении товара: ", error);
+    if (!selectedProduct) return
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', selectedProduct.id)
+
+      if (error) {
+        throw error
       }
+
+      setProductName('')
+      setFilteredProducts([])
+      setSelectedProduct(null)
+
+      await fetchProducts()
+
+      alert('Товар успешно удален')
+    } catch (error) {
+      console.error('Ошибка при удалении товара:', error)
     }
-  };
+  }
 
   return (
     <div className="flex">
@@ -87,7 +98,7 @@ const DeleteProduct = () => {
                   onClick={() => handleProductSelect(product)}
                   className="product-list-item"
                 >
-                  {product.companyName} {product.name}
+                  {product.company_name} {product.name}
                 </li>
               ))}
             </ul>
@@ -102,8 +113,7 @@ const DeleteProduct = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DeleteProduct;
-
+export default DeleteProduct

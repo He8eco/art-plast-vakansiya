@@ -1,190 +1,230 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../index.js"; // Импорт Firebase
-import {
-  collection,
-  query,
-  onSnapshot,
-  addDoc,
-  getDocs,
-} from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import AddProductSpecifications from "./AddCharacteristics.jsx"; // Подключаем компонент характеристик
-import ListEditing from "../components/listEditing/listEditing.jsx";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import AddProductSpecifications from './AddCharacteristics.jsx' // Подключаем компонент характеристик
+import ListEditing from '../components/listEditing/listEditing.jsx'
 
 const AddProduct = () => {
-  const [companyName, setCompanyName] = useState("");
-  const [productName, setProductName] = useState("");
-  const [category, setCategory] = useState("");
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [price, setPrice] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [description, setDescription] = useState("");
-  const [benefits, setBenefits] = useState([{ text: "" }]);
-  const [categories, setCategories] = useState([]);
-  const [images, setImages] = useState([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-  const [mainImage, setMainImage] = useState(null);
-  const [shortSpecs, setShortSpecs] = useState([{ name: "", value: "" }]);
-  const [fullSpecs, setFullSpecs] = useState([{ name: "", value: "" }]);
-  const storage = getStorage();
+  const [companyName, setCompanyName] = useState('')
+  const [productName, setProductName] = useState('')
+  const [category, setCategory] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [filteredCategories, setFilteredCategories] = useState([])
+  const [price, setPrice] = useState('')
+  const [discount, setDiscount] = useState('')
+  const [description, setDescription] = useState('')
+  const [benefits, setBenefits] = useState([{ text: '' }])
+  const [categories, setCategories] = useState([])
+  const [images, setImages] = useState([])
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null)
+  const [mainImage, setMainImage] = useState(null)
+  const [shortSpecs, setShortSpecs] = useState([{ name: '', value: '' }])
+  const [fullSpecs, setFullSpecs] = useState([{ name: '', value: '' }])
 
   // Новые состояния для работы с шаблонами
-  const [templates, setTemplates] = useState([]);
-  const [templateCategory, setTemplateCategory] = useState("");
-  const [filteredTemplates, setFilteredTemplates] = useState([]);
-  const [showTemplateList, setShowTemplateList] = useState(false);
+  const [templates, setTemplates] = useState([])
+  const [templateCategory, setTemplateCategory] = useState('')
+  const [filteredTemplates, setFilteredTemplates] = useState([])
+  const [showTemplateList, setShowTemplateList] = useState(false)
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+  }
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('spec_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching templates:', error)
+      return
+    }
+
+    setTemplates(data)
+  }
   useEffect(() => {
-    const fetchCategories = async () => {
-      const q = query(collection(db, "categories"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const categoriesList = [];
-        querySnapshot.forEach((doc) => {
-          categoriesList.push({ id: doc.id, ...doc.data() });
-        });
-        setCategories(categoriesList);
-      });
-      return () => unsubscribe();
-    };
-
-    const fetchTemplates = async () => {
-      const templatesCollection = collection(db, "specTemplates");
-      const templatesSnapshot = await getDocs(templatesCollection);
-      const templatesList = templatesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTemplates(templatesList);
-    };
-
-    fetchCategories();
-    fetchTemplates();
-  }, []);
+    fetchCategories()
+    fetchTemplates()
+  }, [])
 
   const handleTemplateInputChange = (e) => {
-    const input = e.target.value;
-    setTemplateCategory(input);
-    if (input === "") {
-      setFilteredTemplates([]);
-      setShowTemplateList(false);
-    } else {
-      const filtered = templates.filter((template) =>
-        template.categoryName.toLowerCase().includes(input.toLowerCase())
-      );
-      setFilteredTemplates(filtered);
-      setShowTemplateList(filtered.length > 0);
+    const input = e.target.value
+    setTemplateCategory(input)
+
+    if (input === '') {
+      setFilteredTemplates([])
+      setShowTemplateList(false)
+      return
     }
-  };
+
+    const filtered = templates.filter((template) =>
+      template.category_name.toLowerCase().includes(input.toLowerCase())
+    )
+
+    setFilteredTemplates(filtered)
+    setShowTemplateList(filtered.length > 0)
+  }
 
   const handleTemplateSelect = (template) => {
-    setTemplateCategory(template.categoryName);
-    setShortSpecs(template.shortSpecs || [{ name: "", value: "" }]);
-    setFullSpecs(template.fullSpecs || [{ name: "", value: "" }]);
-    setShowTemplateList(false);
-  };
+    setTemplateCategory(template.category_name)
+    setShortSpecs(template.short_specs || [{ name: '', value: '' }])
+    setFullSpecs(template.full_specs || [{ name: '', value: '' }])
+    setShowTemplateList(false)
+  }
+
+  const uploadProductImage = async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+    const filePath = `products/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
 
   const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setImages((prevImages) => [...prevImages, ...files]);
-  };
+    const files = Array.from(e.target.files)
+    setImages((prevImages) => [...prevImages, ...files])
+  }
 
   const handleDeleteImage = () => {
     if (selectedImageIndex !== null) {
-      const updatedImages = images.filter((_, i) => i !== selectedImageIndex);
-      setImages(updatedImages);
+      const updatedImages = images.filter((_, i) => i !== selectedImageIndex)
+      setImages(updatedImages)
       if (mainImage === images[selectedImageIndex]) {
-        setMainImage(null);
+        setMainImage(null)
       }
-      setSelectedImageIndex(null); // Сбрасываем выбор
+      setSelectedImageIndex(null) // Сбрасываем выбор
     }
-  };
+  }
 
   const handleSetMainImage = () => {
     if (selectedImageIndex !== null) {
-      setMainImage(images[selectedImageIndex]);
+      setMainImage(images[selectedImageIndex])
     }
-  };
+  }
 
   const handleAddProduct = async () => {
+    if (!productName || !selectedCategory || !price) {
+      alert('Пожалуйста, заполните название, категорию и цену товара')
+      return
+    }
+
     try {
-      const imageUrls = [];
+      const imageUrls = []
+
       for (const image of images) {
-        const imageRef = ref(storage, `products/${image.name}`);
-        await uploadBytes(imageRef, image);
-        const imageUrl = await getDownloadURL(imageRef);
-        imageUrls.push(imageUrl);
+        const imageUrl = await uploadProductImage(image)
+        imageUrls.push(imageUrl)
       }
 
-      await addDoc(collection(db, "product"), {
-        companyName,
+      const mainImageUrl =
+        mainImage && images.includes(mainImage)
+          ? imageUrls[images.indexOf(mainImage)]
+          : null
+
+      const { error } = await supabase.from('products').insert({
+        company_name: companyName,
         name: productName,
-        categoryName: category,
-        price,
-        discount: discount || null,
+        category_id: selectedCategory.id,
+        category_name: selectedCategory.name,
+        price: Number(price),
+        discount: discount ? Number(discount) : null,
         description,
         benefits: benefits.map((benefit) => benefit.text),
         images: imageUrls,
-        mainImage: mainImage ? imageUrls[images.indexOf(mainImage)] : null,
-        shortSpecs,
-        fullSpecs,
-      });
-      setCompanyName("");
-      setProductName("");
-      setCategory("");
-      setPrice("");
-      setDiscount("");
-      setDescription("");
-      setBenefits([{ text: "" }]);
-      setImages([]);
-      setMainImage(null);
-      setShortSpecs([{ name: "", value: "" }]);
-      setFullSpecs([{ name: "", value: "" }]);
-      setTemplateCategory("");
+        main_image: mainImageUrl,
+        short_specs: shortSpecs,
+        full_specs: fullSpecs,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      setCompanyName('')
+      setProductName('')
+      setCategory('')
+      setSelectedCategory(null)
+      setPrice('')
+      setDiscount('')
+      setDescription('')
+      setBenefits([{ text: '' }])
+      setImages([])
+      setSelectedImageIndex(null)
+      setMainImage(null)
+      setShortSpecs([{ name: '', value: '' }])
+      setFullSpecs([{ name: '', value: '' }])
+      setTemplateCategory('')
+
+      alert('Товар успешно добавлен')
     } catch (error) {
-      console.error("Error adding product: ", error);
+      console.error('Error adding product:', error)
     }
-  };
+  }
 
   const handleCategoryInputChange = (e) => {
-    const input = e.target.value;
-    setCategory(input);
-    if (input === "") {
-      setFilteredCategories([]);
+    const input = e.target.value
+    setCategory(input)
+    if (input === '') {
+      setFilteredCategories([])
     } else {
       const filtered = categories.filter((cat) =>
         cat.name.toLowerCase().includes(input.toLowerCase())
-      );
-      setFilteredCategories(filtered);
+      )
+      setFilteredCategories(filtered)
     }
-  };
+  }
 
   const handleCategorySelect = (selectedCategory) => {
-    setCategory(selectedCategory);
-    setFilteredCategories([]);
-  };
+    setSelectedCategory(selectedCategory)
+    setCategory(selectedCategory.name)
+    setFilteredCategories([])
+  }
 
   const handleBenefitChange = (index, value) => {
-    const updatedBenefits = [...benefits];
-    updatedBenefits[index].text = value;
-    setBenefits(updatedBenefits);
-  };
+    const updatedBenefits = [...benefits]
+    updatedBenefits[index].text = value
+    setBenefits(updatedBenefits)
+  }
 
   const handleAddBenefit = () => {
-    setBenefits([...benefits, { text: "" }]);
-  };
+    setBenefits([...benefits, { text: '' }])
+  }
 
   const handleRemoveBenefit = (index) => {
-    const updatedBenefits = benefits.filter((_, i) => i !== index);
-    setBenefits(updatedBenefits);
-  };
+    const updatedBenefits = benefits.filter((_, i) => i !== index)
+    setBenefits(updatedBenefits)
+  }
 
   const handleImageClick = (index) => {
     if (selectedImageIndex === index) {
-      setSelectedImageIndex(null); // Сброс выбора, если кликнули по уже выбранной фотографии
+      setSelectedImageIndex(null) // Сброс выбора, если кликнули по уже выбранной фотографии
     } else {
-      setSelectedImageIndex(index); // Устанавливаем выбранное изображение
+      setSelectedImageIndex(index) // Устанавливаем выбранное изображение
     }
-  };
+  }
 
   return (
     <div className="flex">
@@ -220,7 +260,7 @@ const AddProduct = () => {
                 {filteredCategories.map((cat) => (
                   <li
                     key={cat.id}
-                    onClick={() => handleCategorySelect(cat.name)}
+                    onClick={() => handleCategorySelect(cat)}
                     className="category-list-item"
                   >
                     {cat.name}
@@ -278,7 +318,7 @@ const AddProduct = () => {
         <div className="buttons-product">
           <button
             className="button-editing"
-            onClick={() => document.getElementById("fileInput").click()}
+            onClick={() => document.getElementById('fileInput').click()}
           >
             Загрузить фотографии
           </button>
@@ -300,7 +340,7 @@ const AddProduct = () => {
         <input
           type="file"
           id="fileInput"
-          style={{ display: "none" }}
+          style={{ display: 'none' }}
           multiple
           onChange={handleImageUpload}
         />
@@ -314,7 +354,7 @@ const AddProduct = () => {
                     alt={`Загрузка ${index + 1}`}
                     onClick={() => handleImageClick(index)} // Обработчик клика
                     className={`photo ${
-                      selectedImageIndex === index ? "photo-selected" : ""
+                      selectedImageIndex === index ? 'photo-selected' : ''
                     }`} // Добавляем класс photo-selected
                   />
                   {mainImage === image && <span>Основная</span>}
@@ -342,7 +382,7 @@ const AddProduct = () => {
                   onClick={() => handleTemplateSelect(template)}
                   className="template-list-item"
                 >
-                  {template.categoryName}
+                  {template.category_name}
                 </li>
               ))}
             </ul>
@@ -360,7 +400,7 @@ const AddProduct = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AddProduct;
+export default AddProduct

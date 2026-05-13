@@ -1,57 +1,63 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../../index.js"; // Импортируем Firebase
-import {
-  collection,
-  query,
-  onSnapshot,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 const CategoryDeletion = () => {
-  const [categories, setCategories] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false); // Состояние для видимости списка
+  const [categories, setCategories] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false) // Состояние для видимости списка
 
   // Получение категорий из базы данных
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+  }
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      const q = query(collection(db, "categories"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const categoriesList = [];
-        querySnapshot.forEach((doc) => {
-          categoriesList.push({ id: doc.id, ...doc.data() });
-        });
-        setCategories(categoriesList);
-      });
-      return () => unsubscribe();
-    };
-    fetchCategories();
-  }, []);
+    fetchCategories()
+  }, [])
 
   const handleSearchCategories = (e) => {
-    setSearchTerm(e.target.value.toLowerCase());
-    setIsDropdownVisible(true); // Показываем список при изменении текста
-  };
+    setSearchTerm(e.target.value.toLowerCase())
+    setIsDropdownVisible(true) // Показываем список при изменении текста
+  }
 
   const handleSelectCategory = (category) => {
-    setSelectedCategory(category);
-    setSearchTerm(category.name); // Устанавливаем название категории в поле поиска
-    setIsDropdownVisible(false); // Скрываем список после выбора категории
-  };
+    setSelectedCategory(category)
+    setSearchTerm(category.name) // Устанавливаем название категории в поле поиска
+    setIsDropdownVisible(false) // Скрываем список после выбора категории
+  }
 
   const handleDeleteCategory = async () => {
-    if (!selectedCategory) return;
+    if (!selectedCategory) return
 
     try {
-      await deleteDoc(doc(db, "categories", selectedCategory.id));
-      setSelectedCategory(null);
-      setSearchTerm("");
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', selectedCategory.id)
+
+      if (error) {
+        throw error
+      }
+
+      setSelectedCategory(null)
+      setSearchTerm('')
+      setIsDropdownVisible(false)
+      fetchCategories()
     } catch (error) {
-      console.error("Error deleting category: ", error);
+      console.error('Error deleting category:', error)
     }
-  };
+  }
 
   return (
     <div className="editing">
@@ -91,7 +97,7 @@ const CategoryDeletion = () => {
         Удалить категорию
       </button>
     </div>
-  );
-};
+  )
+}
 
-export default CategoryDeletion;
+export default CategoryDeletion

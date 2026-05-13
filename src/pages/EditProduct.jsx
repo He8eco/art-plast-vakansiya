@@ -1,262 +1,340 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../index.js";
-import {
-  collection,
-  query,
-  onSnapshot,
-  getDocs,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import AddProductSpecifications from "./AddCharacteristics.jsx";
-import ListEditing from "../components/listEditing/listEditing.jsx";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import AddProductSpecifications from './AddCharacteristics.jsx'
+import ListEditing from '../components/listEditing/listEditing.jsx'
 
 const EditProduct = () => {
-  const [productName, setProductName] = useState("");
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [category, setCategory] = useState("");
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [price, setPrice] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [description, setDescription] = useState("");
-  const [benefits, setBenefits] = useState([{ text: "" }]);
-  const [categories, setCategories] = useState([]);
-  const [images, setImages] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-  const [mainImage, setMainImage] = useState(null);
-  const [shortSpecs, setShortSpecs] = useState([{ name: "", value: "" }]);
-  const [fullSpecs, setFullSpecs] = useState([{ name: "", value: "" }]);
-  const storage = getStorage();
-  const [imageURLs, setImageURLs] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [newProductName, setNewProductName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [templates, setTemplates] = useState([]);
-  const [templateCategory, setTemplateCategory] = useState("");
-  const [filteredTemplates, setFilteredTemplates] = useState([]);
-  const [showTemplateList, setShowTemplateList] = useState(false);
+  const [productName, setProductName] = useState('')
+  const [products, setProducts] = useState([])
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [category, setCategory] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [filteredCategories, setFilteredCategories] = useState([])
+  const [price, setPrice] = useState('')
+  const [discount, setDiscount] = useState('')
+  const [description, setDescription] = useState('')
+  const [benefits, setBenefits] = useState([{ text: '' }])
+  const [categories, setCategories] = useState([])
+  const [images, setImages] = useState([])
+  const [existingImages, setExistingImages] = useState([])
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null)
+  const [mainImage, setMainImage] = useState(null)
+  const [shortSpecs, setShortSpecs] = useState([{ name: '', value: '' }])
+  const [fullSpecs, setFullSpecs] = useState([{ name: '', value: '' }])
+  const [imageURLs, setImageURLs] = useState([])
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [filteredProducts, setFilteredProducts] = useState([])
+  const [newProductName, setNewProductName] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [templates, setTemplates] = useState([])
+  const [templateCategory, setTemplateCategory] = useState('')
+  const [filteredTemplates, setFilteredTemplates] = useState([])
+  const [showTemplateList, setShowTemplateList] = useState(false)
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+  }
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching products:', error)
+      return
+    }
+
+    setProducts(data)
+  }
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('spec_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching templates:', error)
+      return
+    }
+
+    setTemplates(data)
+  }
   useEffect(() => {
-    const fetchCategories = async () => {
-      const q = query(collection(db, "categories"));
-      onSnapshot(q, (querySnapshot) => {
-        const categoriesList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCategories(categoriesList);
-      });
-    };
-
-    const fetchProducts = async () => {
-      const q = query(collection(db, "product"));
-      const productsSnapshot = await getDocs(q);
-      const productsList = productsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productsList);
-    };
-    const fetchTemplates = async () => {
-      const templatesCollection = collection(db, "specTemplates");
-      const templatesSnapshot = await getDocs(templatesCollection);
-      const templatesList = templatesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setTemplates(templatesList);
-    };
-
-    fetchCategories();
-    fetchProducts();
-    fetchTemplates();
-  }, []);
-
+    fetchCategories()
+    fetchProducts()
+    fetchTemplates()
+  }, [])
   const handleProductSearch = (name) => {
-    setProductName(name);
+    setProductName(name)
 
-    if (name.trim() === "") {
-      setFilteredProducts([]); // Скрыть список, если поле пустое
-      return;
+    if (name.trim() === '') {
+      setFilteredProducts([])
+      return
     }
 
     const filtered = products.filter((product) => {
       const combinedName =
-        `${product.companyName} ${product.name}`.toLowerCase();
-      return combinedName.includes(name.toLowerCase());
-    });
+        `${product.company_name || ''} ${product.name || ''}`.toLowerCase()
 
-    setFilteredProducts(filtered);
-  };
+      return combinedName.includes(name.toLowerCase())
+    })
+
+    setFilteredProducts(filtered)
+  }
   const handleProductSelect = (product) => {
-    setSelectedProduct(product);
-    setProductName(`${product.companyName} ${product.name}`); // Обновлено
-    setCategory(product.categoryName || "");
-    setPrice(product.price || "");
-    setDiscount(product.discount || "");
-    setDescription(product.description || "");
-    setBenefits(product.benefits?.map((text) => ({ text })) || [{ text: "" }]);
-    setShortSpecs(product.shortSpecs || [{ name: "", value: "" }]);
-    setFullSpecs(product.fullSpecs || [{ name: "", value: "" }]);
-    setExistingImages(product.images || []);
-    setMainImage(product.mainImage || null);
-    setFilteredProducts([]); // Очистка списка после выбора продукта
-  };
-  const handleCategorySearch = (name) => {
-    setCategory(name);
+    const productCategory = categories.find(
+      (cat) => cat.id === product.category_id
+    )
 
-    if (name.trim() === "") {
-      setFilteredCategories([]); // Скрыть список, если поле пустое
-      return;
+    setSelectedProduct(product)
+
+    setProductName(`${product.company_name || ''} ${product.name || ''}`)
+
+    setNewProductName(product.name || '')
+    setCompanyName(product.company_name || '')
+
+    setSelectedCategory(productCategory || null)
+    setCategory(productCategory?.name || product.category_name || '')
+
+    setPrice(product.price || '')
+    setDiscount(product.discount || '')
+    setDescription(product.description || '')
+
+    setBenefits(product.benefits?.map((text) => ({ text })) || [{ text: '' }])
+
+    setShortSpecs(product.short_specs || [{ name: '', value: '' }])
+    setFullSpecs(product.full_specs || [{ name: '', value: '' }])
+
+    setExistingImages(product.images || [])
+    setImages([])
+    setImageURLs([])
+
+    setMainImage(product.main_image || null)
+
+    setSelectedImage(null)
+    setSelectedImageIndex(null)
+
+    setFilteredProducts([])
+  }
+  const handleCategorySelect = (cat) => {
+    setSelectedCategory(cat)
+    setCategory(cat.name)
+    setFilteredCategories([])
+  }
+  const handleCategorySearch = (name) => {
+    setCategory(name)
+
+    if (name.trim() === '') {
+      setFilteredCategories([]) // Скрыть список, если поле пустое
+      return
     }
 
     const filtered = categories.filter((cat) =>
       cat.name.toLowerCase().includes(name.toLowerCase())
-    );
+    )
 
-    setFilteredCategories(filtered);
-  };
+    setFilteredCategories(filtered)
+  }
+  const uploadProductImage = async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+    const filePath = `products/${fileName}`
 
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
   const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setImages((prevImages) => [...prevImages, ...files]);
+    const files = Array.from(e.target.files)
+    setImages((prevImages) => [...prevImages, ...files])
 
-    const newImageURLs = files.map((file) => URL.createObjectURL(file));
-    setImageURLs((prevURLs) => [...prevURLs, ...newImageURLs]);
-  };
+    const newImageURLs = files.map((file) => URL.createObjectURL(file))
+    setImageURLs((prevURLs) => [...prevURLs, ...newImageURLs])
+  }
 
   const handleDeleteImage = () => {
-    if (selectedImageIndex !== null) {
-      if (existingImages[selectedImageIndex]) {
-        setExistingImages(
-          existingImages.filter((_, i) => i !== selectedImageIndex)
-        );
-      } else {
-        setImages(images.filter((_, i) => i !== selectedImageIndex));
+    if (selectedImageIndex === null) return
+
+    if (selectedImageIndex < existingImages.length) {
+      const imageToDelete = existingImages[selectedImageIndex]
+
+      setExistingImages((prevImages) =>
+        prevImages.filter((_, i) => i !== selectedImageIndex)
+      )
+
+      if (mainImage === imageToDelete) {
+        setMainImage(null)
       }
-      setSelectedImageIndex(null);
+    } else {
+      const newImageIndex = selectedImageIndex - existingImages.length
+      const imageToDelete = images[newImageIndex]
+
+      setImages((prevImages) =>
+        prevImages.filter((_, i) => i !== newImageIndex)
+      )
+
+      setImageURLs((prevUrls) => prevUrls.filter((_, i) => i !== newImageIndex))
+
+      if (mainImage === imageToDelete) {
+        setMainImage(null)
+      }
     }
-  };
+
+    setSelectedImage(null)
+    setSelectedImageIndex(null)
+  }
 
   const handleSetMainImage = () => {
-    if (selectedImageIndex !== null) {
-      if (existingImages[selectedImageIndex]) {
-        setMainImage(existingImages[selectedImageIndex]);
-      } else {
-        setMainImage(images[selectedImageIndex]);
-      }
+    if (selectedImageIndex === null) return
+
+    if (selectedImageIndex < existingImages.length) {
+      setMainImage(existingImages[selectedImageIndex])
+    } else {
+      const newImageIndex = selectedImageIndex - existingImages.length
+      setMainImage(images[newImageIndex])
     }
-  };
+  }
   const handleImageClick = (index) => {
-    setSelectedImage(index);
-    setSelectedImageIndex(index); // сохранить индекс выбранного изображения
-  };
+    setSelectedImage(index)
+    setSelectedImageIndex(index) // сохранить индекс выбранного изображения
+  }
 
   const handleSaveChanges = async () => {
-    if (!selectedProduct) return; // Проверка на наличие выбранного продукта
-
-    const productRef = doc(db, "product", selectedProduct.id);
-    const newImages = [];
+    if (!selectedProduct) return
 
     try {
-      // Загрузка новых изображений в хранилище и получение их URL
+      const newImageUrls = []
+
       for (const image of images) {
-        const imageRef = ref(storage, `products/${image.name}`);
-        await uploadBytes(imageRef, image);
-        const imageUrl = await getDownloadURL(imageRef);
-        newImages.push(imageUrl);
+        const imageUrl = await uploadProductImage(image)
+        newImageUrls.push(imageUrl)
       }
 
-      // Обновлённый массив изображений и главного изображения
-      const updatedImages = [...existingImages, ...newImages];
-      const mainImageUrl =
-        typeof mainImage === "string" && mainImage.startsWith("http")
-          ? mainImage
-          : updatedImages[images.indexOf(mainImage)];
+      const updatedImages = [...existingImages, ...newImageUrls]
 
-      // Создаём объект с обновлёнными данными продукта
+      let mainImageUrl = null
+
+      if (typeof mainImage === 'string') {
+        mainImageUrl = mainImage
+      } else if (mainImage) {
+        const newImageIndex = images.indexOf(mainImage)
+        mainImageUrl = newImageIndex !== -1 ? newImageUrls[newImageIndex] : null
+      }
+
       const updatedProductData = {
-        name: newProductName || selectedProduct.name, // Устанавливаем новое название, если оно задано
-        companyName: companyName || selectedProduct.companyName, // Устанавливаем новое название компании
-        categoryName: category,
-        price,
-        discount,
+        name: newProductName || selectedProduct.name,
+        company_name: companyName || selectedProduct.company_name,
+        category_id:
+          selectedCategory?.id || selectedProduct.category_id || null,
+        category_name: selectedCategory?.name || category,
+        price: Number(price),
+        discount: discount ? Number(discount) : null,
         description,
         benefits: benefits.map((benefit) => benefit.text),
         images: updatedImages,
-        mainImage: mainImageUrl,
-        shortSpecs,
-        fullSpecs,
-      };
+        main_image: mainImageUrl,
+        short_specs: shortSpecs,
+        full_specs: fullSpecs,
+      }
 
-      // Обновляем документ продукта в Firestore
-      await updateDoc(productRef, updatedProductData);
+      const { error } = await supabase
+        .from('products')
+        .update(updatedProductData)
+        .eq('id', selectedProduct.id)
 
-      // Обновляем состояние selectedProduct с новыми данными
-      setSelectedProduct({ ...selectedProduct, ...updatedProductData });
+      if (error) {
+        throw error
+      }
 
-      // Очищаем поля после успешного сохранения
-      setProductName("");
-      setNewProductName("");
-      setCompanyName("");
-      setCategory("");
-      setPrice("");
-      setDiscount("");
-      setDescription("");
-      setBenefits([{ text: "" }]);
-      setImages("");
-      setExistingImages([]);
-      setSelectedImage(null);
-      setMainImage("");
-      setShortSpecs([{ name: "", value: "" }]);
-      setFullSpecs([{ name: "", value: "" }]);
-      setTemplateCategory("");
+      setSelectedProduct({ ...selectedProduct, ...updatedProductData })
 
-      alert("Изменения успешно сохранены!");
+      setProductName('')
+      setNewProductName('')
+      setCompanyName('')
+      setCategory('')
+      setSelectedCategory(null)
+      setPrice('')
+      setDiscount('')
+      setDescription('')
+      setBenefits([{ text: '' }])
+      setImages([])
+      setImageURLs([])
+      setExistingImages([])
+      setSelectedImage(null)
+      setSelectedImageIndex(null)
+      setMainImage(null)
+      setShortSpecs([{ name: '', value: '' }])
+      setFullSpecs([{ name: '', value: '' }])
+      setTemplateCategory('')
+      setFilteredProducts([])
+
+      await fetchProducts()
+
+      alert('Изменения успешно сохранены!')
     } catch (error) {
-      console.error("Error saving product: ", error);
-      alert("Произошла ошибка при сохранении изменений");
+      console.error('Error saving product:', error)
+      alert('Произошла ошибка при сохранении изменений')
     }
-  };
+  }
 
   const handleBenefitChange = (index, value) => {
-    const updatedBenefits = [...benefits];
-    updatedBenefits[index].text = value;
-    setBenefits(updatedBenefits);
-  };
+    const updatedBenefits = [...benefits]
+    updatedBenefits[index].text = value
+    setBenefits(updatedBenefits)
+  }
 
   const handleAddBenefit = () => {
-    setBenefits([...benefits, { text: "" }]);
-  };
+    setBenefits([...benefits, { text: '' }])
+  }
 
   const handleRemoveBenefit = (index) => {
-    const updatedBenefits = benefits.filter((_, i) => i !== index);
-    setBenefits(updatedBenefits);
-  };
+    const updatedBenefits = benefits.filter((_, i) => i !== index)
+    setBenefits(updatedBenefits)
+  }
   const handleTemplateInputChange = (e) => {
-    const input = e.target.value;
-    setTemplateCategory(input);
-    if (input === "") {
-      setFilteredTemplates([]);
-      setShowTemplateList(false);
-    } else {
-      const filtered = templates.filter((template) =>
-        template.categoryName.toLowerCase().includes(input.toLowerCase())
-      );
-      setFilteredTemplates(filtered);
-      setShowTemplateList(filtered.length > 0);
+    const input = e.target.value
+    setTemplateCategory(input)
+
+    if (input === '') {
+      setFilteredTemplates([])
+      setShowTemplateList(false)
+      return
     }
-  };
+
+    const filtered = templates.filter((template) =>
+      template.category_name.toLowerCase().includes(input.toLowerCase())
+    )
+
+    setFilteredTemplates(filtered)
+    setShowTemplateList(filtered.length > 0)
+  }
   const handleTemplateSelect = (template) => {
-    setTemplateCategory(template.categoryName);
-    setShortSpecs(template.shortSpecs || [{ name: "", value: "" }]);
-    setFullSpecs(template.fullSpecs || [{ name: "", value: "" }]);
-    setShowTemplateList(false);
-  };
+    setTemplateCategory(template.category_name)
+    setShortSpecs(template.short_specs || [{ name: '', value: '' }])
+    setFullSpecs(template.full_specs || [{ name: '', value: '' }])
+    setShowTemplateList(false)
+  }
 
   return (
     <div className="flex">
@@ -280,7 +358,7 @@ const EditProduct = () => {
                   onClick={() => handleProductSelect(product)}
                   className="product-list-item"
                 >
-                  {`${product.companyName} ${product.name}`}{" "}
+                  {`${product.company_name} ${product.name}`}{' '}
                   {/* Отображение полной строки */}
                 </li>
               ))}
@@ -316,10 +394,7 @@ const EditProduct = () => {
               {filteredCategories.map((cat) => (
                 <li
                   key={cat.id}
-                  onClick={() => {
-                    setCategory(cat.name);
-                    setFilteredCategories([]); // Очистка списка после выбора категории
-                  }}
+                  onClick={() => handleCategorySelect(cat)}
                   className="category-list-item"
                 >
                   {cat.name}
@@ -376,7 +451,7 @@ const EditProduct = () => {
         <div className="buttons-product">
           <button
             className="button-editing"
-            onClick={() => document.getElementById("fileInput").click()}
+            onClick={() => document.getElementById('fileInput').click()}
           >
             Загрузить фотографии
           </button>
@@ -398,7 +473,7 @@ const EditProduct = () => {
         <input
           type="file"
           id="fileInput"
-          style={{ display: "none" }}
+          style={{ display: 'none' }}
           multiple
           onChange={handleImageUpload}
         />
@@ -412,8 +487,8 @@ const EditProduct = () => {
                   onClick={() => handleImageClick(index)} // обновлено
                   alt="Product"
                   className={`image ${
-                    mainImage === imageUrl ? "main-photo" : ""
-                  } ${selectedImage === index ? "photo-selected" : ""}`} // добавлено
+                    mainImage === imageUrl ? 'main-photo' : ''
+                  } ${selectedImage === index ? 'photo-selected' : ''}`} // добавлено
                 />
                 {mainImage === imageUrl && <span>Основная</span>}
               </li>
@@ -427,11 +502,11 @@ const EditProduct = () => {
                   } // обновлено
                   alt="New Upload"
                   className={`image ${
-                    mainImage === images[index] ? "main-photo" : ""
+                    mainImage === images[index] ? 'main-photo' : ''
                   } ${
                     selectedImage === existingImages.length + index
-                      ? "photo-selected"
-                      : ""
+                      ? 'photo-selected'
+                      : ''
                   }`} // добавлено
                 />
                 {mainImage === images[index] && <span>Основная</span>}
@@ -456,7 +531,7 @@ const EditProduct = () => {
                   onClick={() => handleTemplateSelect(template)}
                   className="template-list-item"
                 >
-                  {template.categoryName}
+                  {template.category_name}
                 </li>
               ))}
             </ul>
@@ -473,7 +548,7 @@ const EditProduct = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EditProduct;
+export default EditProduct

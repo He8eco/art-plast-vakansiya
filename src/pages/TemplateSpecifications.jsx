@@ -1,182 +1,212 @@
-import React, { useState, useEffect } from "react";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "../index.js";
-import AddProductSpecifications from "./AddCharacteristics.jsx";
-import ListEditing from "../components/listEditing/listEditing";
-import "../styles/editing.css";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import AddProductSpecifications from './AddCharacteristics.jsx'
+import ListEditing from '../components/listEditing/listEditing'
+import '../styles/editing.css'
 
 export default function TemplateSpecifications() {
-  const [categoryName, setCategoryName] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [showCategoryList, setShowCategoryList] = useState(false);
+  const [categoryName, setCategoryName] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [filteredCategories, setFilteredCategories] = useState([])
+  const [showCategoryList, setShowCategoryList] = useState(false)
 
   // Состояния для создания шаблона
   const [createShortSpecs, setCreateShortSpecs] = useState([
-    { name: "", value: "" },
-  ]);
+    { name: '', value: '' },
+  ])
   const [createFullSpecs, setCreateFullSpecs] = useState([
-    { name: "", value: "" },
-  ]);
+    { name: '', value: '' },
+  ])
 
-  const [templates, setTemplates] = useState([]);
+  const [templates, setTemplates] = useState([])
 
   // Для редактирования
-  const [editCategoryName, setEditCategoryName] = useState("");
-  const [filteredTemplates, setFilteredTemplates] = useState([]);
-  const [showTemplateList, setShowTemplateList] = useState(false);
-  const [selectedEditTemplate, setSelectedEditTemplate] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState('')
+  const [filteredTemplates, setFilteredTemplates] = useState([])
+  const [showTemplateList, setShowTemplateList] = useState(false)
+  const [selectedEditTemplate, setSelectedEditTemplate] = useState(null)
 
   // Состояния для редактирования шаблона
-  const [editShortSpecs, setEditShortSpecs] = useState([]);
-  const [editFullSpecs, setEditFullSpecs] = useState([]);
+  const [editShortSpecs, setEditShortSpecs] = useState([])
+  const [editFullSpecs, setEditFullSpecs] = useState([])
 
   // Для удаления
-  const [deleteCategoryName, setDeleteCategoryName] = useState("");
+  const [deleteCategoryName, setDeleteCategoryName] = useState('')
   const [filteredTemplatesForDelete, setFilteredTemplatesForDelete] = useState(
     []
-  );
+  )
   const [showTemplateListForDelete, setShowTemplateListForDelete] =
-    useState(false);
-  const [selectedDeleteTemplate, setSelectedDeleteTemplate] = useState(null);
+    useState(false)
+  const [selectedDeleteTemplate, setSelectedDeleteTemplate] = useState(null)
 
   useEffect(() => {
-    fetchCategories();
-    fetchTemplates();
-  }, []);
+    fetchCategories()
+    fetchTemplates()
+  }, [])
 
   // Функция для получения категорий из Firebase
   const fetchCategories = async () => {
-    const categoryCollection = collection(db, "categories");
-    const categorySnapshot = await getDocs(categoryCollection);
-    const categoryList = categorySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setCategories(categoryList);
-    setFilteredCategories(categoryList);
-  };
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+    setFilteredCategories(data)
+  }
 
   // Функция для получения шаблонов из Firebase
   const fetchTemplates = async () => {
-    const templatesCollection = collection(db, "specTemplates");
-    const templatesSnapshot = await getDocs(templatesCollection);
-    const templatesList = templatesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setTemplates(templatesList);
-  };
+    const { data, error } = await supabase
+      .from('spec_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching templates:', error)
+      return
+    }
+
+    setTemplates(data)
+  }
 
   // Функции для поиска категорий при создании шаблона
   const handleCategorySearch = (name) => {
-    setCategoryName(name);
+    setCategoryName(name)
     const filtered = categories.filter((category) =>
       category.name.toLowerCase().includes(name.toLowerCase())
-    );
-    setFilteredCategories(filtered);
-    setShowCategoryList(name.length > 0 && filtered.length > 0);
-  };
+    )
+    setFilteredCategories(filtered)
+    setShowCategoryList(name.length > 0 && filtered.length > 0)
+  }
 
   const handleCategorySelect = (category) => {
-    setCategoryName(category.name);
-    setShowCategoryList(false);
-  };
+    setSelectedCategory(category)
+    setCategoryName(category.name)
+    setShowCategoryList(false)
+  }
 
   // Функция для создания шаблона
   const handleAddTemplate = async () => {
-    if (!categoryName) {
-      alert("Пожалуйста, выберите категорию");
-      return;
+    if (!selectedCategory) {
+      alert('Пожалуйста, выберите категорию')
+      return
     }
 
-    await addDoc(collection(db, "specTemplates"), {
-      categoryName: categoryName,
-      shortSpecs: createShortSpecs,
-      fullSpecs: createFullSpecs,
-    });
+    const { error } = await supabase.from('spec_templates').insert({
+      category_id: selectedCategory.id,
+      category_name: selectedCategory.name,
+      short_specs: createShortSpecs,
+      full_specs: createFullSpecs,
+    })
 
-    setCategoryName("");
-    setCreateShortSpecs([]);
-    setCreateFullSpecs([]);
-    alert("Шаблон успешно создан");
-    await fetchTemplates(); // Обновляем список шаблонов
-  };
+    if (error) {
+      console.error('Error adding template:', error)
+      return
+    }
+
+    setCategoryName('')
+    setSelectedCategory(null)
+    setCreateShortSpecs([{ name: '', value: '' }])
+    setCreateFullSpecs([{ name: '', value: '' }])
+
+    alert('Шаблон успешно создан')
+    await fetchTemplates()
+  }
 
   // Функции для поиска шаблонов при редактировании
   const handleTemplateSearch = (name) => {
-    setEditCategoryName(name);
+    setEditCategoryName(name)
+
     const filtered = templates.filter((template) =>
-      template.categoryName.toLowerCase().includes(name.toLowerCase())
-    );
-    setFilteredTemplates(filtered);
-    setShowTemplateList(name.length > 0 && filtered.length > 0);
-  };
+      template.category_name.toLowerCase().includes(name.toLowerCase())
+    )
+
+    setFilteredTemplates(filtered)
+    setShowTemplateList(name.length > 0 && filtered.length > 0)
+  }
 
   const handleTemplateSelect = (template) => {
-    setEditCategoryName(template.categoryName);
-    setEditShortSpecs(template.shortSpecs);
-    setEditFullSpecs(template.fullSpecs);
-    setSelectedEditTemplate(template);
-    setShowTemplateList(false);
-  };
+    setEditCategoryName(template.category_name)
+    setEditShortSpecs(template.short_specs || [])
+    setEditFullSpecs(template.full_specs || [])
+    setSelectedEditTemplate(template)
+    setShowTemplateList(false)
+  }
 
   // Функция для сохранения изменений шаблона
   const handleSaveTemplateChanges = async () => {
-    if (!selectedEditTemplate) return;
+    if (!selectedEditTemplate) return
 
-    const templateRef = doc(db, "specTemplates", selectedEditTemplate.id);
-    await updateDoc(templateRef, {
-      shortSpecs: editShortSpecs,
-      fullSpecs: editFullSpecs,
-    });
+    const { error } = await supabase
+      .from('spec_templates')
+      .update({
+        short_specs: editShortSpecs,
+        full_specs: editFullSpecs,
+      })
+      .eq('id', selectedEditTemplate.id)
 
-    setEditCategoryName("");
-    setEditShortSpecs([]);
-    setEditFullSpecs([]);
-    setSelectedEditTemplate(null);
-    alert("Изменения сохранены");
-    await fetchTemplates(); // Обновляем список шаблонов
-  };
+    if (error) {
+      console.error('Error updating template:', error)
+      return
+    }
+
+    setEditCategoryName('')
+    setEditShortSpecs([])
+    setEditFullSpecs([])
+    setSelectedEditTemplate(null)
+
+    alert('Изменения сохранены')
+    await fetchTemplates()
+  }
 
   // Функции для поиска шаблонов при удалении
   const handleTemplateSearchForDelete = (name) => {
-    setDeleteCategoryName(name);
+    setDeleteCategoryName(name)
+
     const filtered = templates.filter((template) =>
-      template.categoryName.toLowerCase().includes(name.toLowerCase())
-    );
-    setFilteredTemplatesForDelete(filtered);
-    setShowTemplateListForDelete(name.length > 0 && filtered.length > 0);
-  };
+      template.category_name.toLowerCase().includes(name.toLowerCase())
+    )
+
+    setFilteredTemplatesForDelete(filtered)
+    setShowTemplateListForDelete(name.length > 0 && filtered.length > 0)
+  }
 
   const handleTemplateSelectForDelete = (template) => {
-    setDeleteCategoryName(template.categoryName);
-    setSelectedDeleteTemplate(template);
-    setShowTemplateListForDelete(false);
-  };
+    setDeleteCategoryName(template.category_name)
+    setSelectedDeleteTemplate(template)
+    setShowTemplateListForDelete(false)
+  }
 
   // Функция для удаления шаблона
   const handleDeleteTemplate = async () => {
     if (!selectedDeleteTemplate) {
-      alert("Пожалуйста, выберите шаблон для удаления");
-      return;
+      alert('Пожалуйста, выберите шаблон для удаления')
+      return
     }
 
-    const templateRef = doc(db, "specTemplates", selectedDeleteTemplate.id);
-    await deleteDoc(templateRef);
+    const { error } = await supabase
+      .from('spec_templates')
+      .delete()
+      .eq('id', selectedDeleteTemplate.id)
 
-    setDeleteCategoryName("");
-    setSelectedDeleteTemplate(null);
-    alert("Шаблон удален");
-    await fetchTemplates(); // Обновляем список шаблонов
-  };
+    if (error) {
+      console.error('Error deleting template:', error)
+      return
+    }
+
+    setDeleteCategoryName('')
+    setSelectedDeleteTemplate(null)
+
+    alert('Шаблон удален')
+    await fetchTemplates()
+  }
 
   return (
     <div className="flex">
@@ -238,7 +268,7 @@ export default function TemplateSpecifications() {
                   className="product-list-item"
                   onClick={() => handleTemplateSelect(template)}
                 >
-                  {template.categoryName}
+                  {template.category_name}
                 </li>
               ))}
             </ul>
@@ -282,7 +312,7 @@ export default function TemplateSpecifications() {
                     className="product-list-item"
                     onClick={() => handleTemplateSelectForDelete(template)}
                   >
-                    {template.categoryName}
+                    {template.category_name}
                   </li>
                 ))}
               </ul>
@@ -293,5 +323,5 @@ export default function TemplateSpecifications() {
         </button>
       </div>
     </div>
-  );
+  )
 }

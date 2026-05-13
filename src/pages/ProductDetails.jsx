@@ -1,85 +1,97 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../index.js";
-import { doc, getDoc } from "firebase/firestore";
-import { useParams } from "react-router-dom";
-import "../styles/ProductDetails.css";
-import Breadcrumb from "../components/UI/BreadCrumb.jsx";
-import FavoriteButton from "../components/UI/FavoriteButton.jsx";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { useParams } from 'react-router-dom'
+import '../styles/ProductDetails.css'
+import Breadcrumb from '../components/UI/BreadCrumb.jsx'
+import FavoriteButton from '../components/UI/FavoriteButton.jsx'
 
 const ProductDetails = () => {
-  const { productId } = useParams();
-  const [product, setProduct] = useState(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [visibleThumbnailsStart, setVisibleThumbnailsStart] = useState(0);
+  const { productId } = useParams()
+  const [product, setProduct] = useState(null)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [visibleThumbnailsStart, setVisibleThumbnailsStart] = useState(0)
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!productId) return;
+      if (!productId) return
 
       try {
-        const productRef = doc(db, "product", productId);
-        const productSnapshot = await getDoc(productRef);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single()
 
-        if (productSnapshot.exists()) {
-          setProduct({ id: productSnapshot.id, ...productSnapshot.data() });
-        } else {
-          console.error("Товар не найден.");
+        if (error) {
+          console.error('Ошибка при получении данных товара:', error)
+          return
         }
+
+        setProduct(data)
       } catch (error) {
-        console.error("Ошибка при получении данных товара: ", error);
+        console.error('Ошибка при получении данных товара: ', error)
       }
-    };
+    }
 
-    fetchProduct();
-  }, [productId]);
+    fetchProduct()
+  }, [productId])
 
-  if (!product) return <p>Загрузка...</p>;
+  if (!product) return <p>Загрузка...</p>
 
-  const THUMBNAILS_VISIBLE_COUNT = 3;
+  const productImages = product.images || []
+  const THUMBNAILS_VISIBLE_COUNT = 3
 
   const showNextImage = () => {
-    const newIndex = (selectedImageIndex + 1) % product.images.length;
-    setSelectedImageIndex(newIndex);
-    ensureThumbnailVisible(newIndex);
-  };
+    if (productImages.length === 0) return
+
+    const newIndex = (selectedImageIndex + 1) % productImages.length
+    setSelectedImageIndex(newIndex)
+    ensureThumbnailVisible(newIndex)
+  }
 
   const showPreviousImage = () => {
+    if (productImages.length === 0) return
+
     const newIndex =
-      (selectedImageIndex - 1 + product.images.length) % product.images.length;
-    setSelectedImageIndex(newIndex);
-    ensureThumbnailVisible(newIndex);
-  };
+      (selectedImageIndex - 1 + productImages.length) % productImages.length
+
+    setSelectedImageIndex(newIndex)
+    ensureThumbnailVisible(newIndex)
+  }
 
   const scrollThumbnailsDown = () => {
+    if (productImages.length === 0) return
+
     setVisibleThumbnailsStart(
-      (prevStart) => (prevStart + 1) % product.images.length
-    );
-  };
+      (prevStart) => (prevStart + 1) % productImages.length
+    )
+  }
 
   const scrollThumbnailsUp = () => {
+    if (productImages.length === 0) return
+
     setVisibleThumbnailsStart(
       (prevStart) =>
-        (prevStart - 1 + product.images.length) % product.images.length
-    );
-  };
-
+        (prevStart - 1 + productImages.length) % productImages.length
+    )
+  }
   const ensureThumbnailVisible = (index) => {
     if (
       index < visibleThumbnailsStart ||
       index >= visibleThumbnailsStart + THUMBNAILS_VISIBLE_COUNT
     ) {
-      setVisibleThumbnailsStart(index);
+      setVisibleThumbnailsStart(index)
     }
-  };
+  }
   return (
     <div className="product-details">
       <FavoriteButton productId={product.id} />
       <Breadcrumb
-        categoryName={product.categoryName}
-        companyName={product.companyName}
+        categoryName={product.category_name}
+        companyName={product.company_name}
       />
       <p className="product-name">
-        {product.companyName} {product.name}
+        {product.company_name} {product.name}
       </p>
       <div className="product">
         <div className="images-container">
@@ -87,28 +99,37 @@ const ProductDetails = () => {
             <button
               className="arrow-button up-arrow"
               onClick={scrollThumbnailsUp}
-              disabled={product.images.length <= THUMBNAILS_VISIBLE_COUNT}
+              disabled={productImages.length <= THUMBNAILS_VISIBLE_COUNT}
             >
               <span>&gt;</span>
             </button>
-            {product.images &&
-              Array.from({ length: THUMBNAILS_VISIBLE_COUNT }, (_, i) => {
-                const thumbnailIndex =
-                  (visibleThumbnailsStart + i) % product.images.length;
-                return (
-                  <img
-                    key={thumbnailIndex}
-                    src={product.images[thumbnailIndex]}
-                    alt={`${product.name} thumbnail`}
-                    className={`thumbnail ${
-                      selectedImageIndex === thumbnailIndex
-                        ? "selected-thumbnail"
-                        : ""
-                    }`}
-                    onClick={() => setSelectedImageIndex(thumbnailIndex)}
-                  />
-                );
-              })}
+            {productImages.length > 0 &&
+              Array.from(
+                {
+                  length: Math.min(
+                    THUMBNAILS_VISIBLE_COUNT,
+                    productImages.length
+                  ),
+                },
+                (_, i) => {
+                  const thumbnailIndex =
+                    (visibleThumbnailsStart + i) % productImages.length
+
+                  return (
+                    <img
+                      key={thumbnailIndex}
+                      src={productImages[thumbnailIndex]}
+                      alt={`${product.name} thumbnail`}
+                      className={`thumbnail ${
+                        selectedImageIndex === thumbnailIndex
+                          ? 'selected-thumbnail'
+                          : ''
+                      }`}
+                      onClick={() => setSelectedImageIndex(thumbnailIndex)}
+                    />
+                  )
+                }
+              )}
             <button
               className="arrow-button down-arrow"
               onClick={scrollThumbnailsDown}
@@ -122,11 +143,13 @@ const ProductDetails = () => {
               &lt;
             </span>
             <div className="main-image-container">
-              <img
-                className="main-image"
-                src={product.images[selectedImageIndex]}
-                alt={`${product.name} main`}
-              />
+              {productImages.length > 0 && (
+                <img
+                  className="main-image"
+                  src={productImages[selectedImageIndex]}
+                  alt={`${product.name} main`}
+                />
+              )}
             </div>
             <span className="arrow right-arrow" onClick={showNextImage}>
               &gt;
@@ -137,10 +160,10 @@ const ProductDetails = () => {
           <div className="product-specs">
             <p>Технические характеристики</p>
             <ul>
-              {product.fullSpecs &&
-                product.fullSpecs.map((spec, index) => (
+              {product.full_specs &&
+                product.full_specs.map((spec, index) => (
                   <li key={index}>
-                    <span className="product-name-property">{spec.name}:</span>{" "}
+                    <span className="product-name-property">{spec.name}:</span>{' '}
                     <span>{spec.value}</span>
                   </li>
                 ))}
@@ -149,7 +172,7 @@ const ProductDetails = () => {
           <div>
             <p
               className={`product-price ${
-                product.discount ? "product-price-none" : ""
+                product.discount ? 'product-price-none' : ''
               }`}
             >
               {product.price} ₽
@@ -174,7 +197,7 @@ const ProductDetails = () => {
         </ul>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProductDetails;
+export default ProductDetails

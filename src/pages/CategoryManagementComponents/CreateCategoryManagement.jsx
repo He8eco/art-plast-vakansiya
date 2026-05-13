@@ -1,96 +1,118 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../../index.js"; // Импортируем Firebase
-import { collection, addDoc, query, onSnapshot } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 const CreateCategoryManagement = () => {
-  const [categoryName, setCategoryName] = useState("");
-  const [sectionName, setSectionName] = useState("");
-  const [sections, setSections] = useState([]);
-  const [filteredSections, setFilteredSections] = useState([]);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [image, setImage] = useState(null);
-  const [error, setError] = useState("");
-
-  const storage = getStorage();
+  const [categoryName, setCategoryName] = useState('')
+  const [sectionName, setSectionName] = useState('')
+  const [sections, setSections] = useState([])
+  const [filteredSections, setFilteredSections] = useState([])
+  const [selectedSection, setSelectedSection] = useState(null)
+  const [image, setImage] = useState(null)
+  const [error, setError] = useState('')
 
   // Получение разделов из базы данных
+  const fetchSections = async () => {
+    const { data, error } = await supabase
+      .from('sections')
+      .select('*')
+      .order('position', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching sections:', error)
+      return
+    }
+
+    setSections(data)
+  }
+
   useEffect(() => {
-    const fetchSections = async () => {
-      const q = query(collection(db, "sections"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const sectionsList = [];
-        querySnapshot.forEach((doc) => {
-          sectionsList.push({ id: doc.id, ...doc.data() });
-        });
-        setSections(sectionsList);
-      });
-      return () => unsubscribe();
-    };
-    fetchSections();
-  }, []);
+    fetchSections()
+  }, [])
+
+  const uploadCategoryImage = async (file) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+    const filePath = `categories/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('category-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    const { data } = supabase.storage
+      .from('category-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
 
   const handleAddCategory = async () => {
     if (!categoryName || !selectedSection) {
-      setError("Пожалуйста, заполните все поля.");
-      return;
+      setError('Пожалуйста, заполните все поля.')
+      return
     }
-    setError("");
+    setError('')
 
     try {
-      let imageUrl = null;
+      let imageUrl = null
       if (image) {
-        const imageRef = ref(storage, `categories/${image.name}`);
-        await uploadBytes(imageRef, image);
-        imageUrl = await getDownloadURL(imageRef);
+        imageUrl = await uploadCategoryImage(image)
       }
 
-      await addDoc(collection(db, "categories"), {
+      const { error } = await supabase.from('categories').insert({
         name: categoryName,
-        sectionId: selectedSection.id,
+        section_id: selectedSection.id,
         image: imageUrl,
-      });
+      })
+
+      if (error) {
+        throw error
+      }
 
       // Сброс состояния после добавления
-      setCategoryName("");
-      setSelectedSection(null);
-      setSectionName("");
-      setImage(null);
+      setCategoryName('')
+      setSelectedSection(null)
+      setSectionName('')
+      setImage(null)
     } catch (error) {
-      console.error("Error adding category: ", error);
+      console.error('Error adding category:', error)
+      setError('Не удалось создать категорию.')
     }
-  };
+  }
 
   const handleSearchSections = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
+    const searchTerm = e.target.value.toLowerCase()
     const filtered = sections.filter((section) =>
       section.name.toLowerCase().includes(searchTerm)
-    );
-    setFilteredSections(filtered);
-    setSectionName(searchTerm);
-  };
+    )
+    setFilteredSections(filtered)
+    setSectionName(searchTerm)
+  }
 
   const handleSelectSection = (section) => {
-    setSelectedSection(section);
-    setSectionName(section.name);
-    setFilteredSections([]);
-  };
+    setSelectedSection(section)
+    setSectionName(section.name)
+    setFilteredSections([])
+  }
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setImage(file);
+      setImage(file)
     }
-  };
+  }
 
   const handleDeleteImage = () => {
-    setImage(null);
-  };
+    setImage(null)
+  }
 
   return (
     <div className="editing">
       <p className="title top">Создание категории</p>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <div>
         <p>Раздел категории</p>
         <div className="list-editing">
@@ -123,9 +145,9 @@ const CreateCategoryManagement = () => {
         />
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: "0.5rem",
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '0.5rem',
           }}
         >
           <div className="photo-editing">
@@ -133,10 +155,10 @@ const CreateCategoryManagement = () => {
               <img
                 src={URL.createObjectURL(image)}
                 alt="Обложка категории"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             ) : (
-              <p style={{ textAlign: "center", lineHeight: "150px" }}>
+              <p style={{ textAlign: 'center', lineHeight: '150px' }}>
                 Обложка
               </p>
             )}
@@ -144,14 +166,14 @@ const CreateCategoryManagement = () => {
           <div className="buttons-photo">
             <button
               className="button-editing"
-              onClick={() => document.getElementById("createFileInput").click()}
+              onClick={() => document.getElementById('createFileInput').click()}
             >
               Загрузить фотографию
             </button>
             <input
               type="file"
               id="createFileInput"
-              style={{ display: "none" }}
+              style={{ display: 'none' }}
               onChange={handleImageUpload}
             />
             <button
@@ -168,7 +190,7 @@ const CreateCategoryManagement = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CreateCategoryManagement;
+export default CreateCategoryManagement

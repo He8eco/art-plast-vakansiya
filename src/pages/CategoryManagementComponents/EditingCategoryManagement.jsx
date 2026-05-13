@@ -1,175 +1,169 @@
-import React, { useState, useEffect } from "react";
-import { db } from "../../index.js";
-import {
-  collection,
-  query,
-  onSnapshot,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 const EditingCategoryManagement = () => {
-  const [sectionName, setSectionName] = useState("");
-  const [sections, setSections] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [filteredSections, setFilteredSections] = useState([]);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [editingCategoryId, setEditingCategoryId] = useState(null);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [image, setImage] = useState(null);
-  const storage = getStorage();
+  const [sectionName, setSectionName] = useState('')
+  const [sections, setSections] = useState([])
+  const [filteredCategories, setFilteredCategories] = useState([])
+  const [filteredSections, setFilteredSections] = useState([])
+  const [selectedSection, setSelectedSection] = useState(null)
+  const [categories, setCategories] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [editingCategoryId, setEditingCategoryId] = useState(null)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [image, setImage] = useState(null)
+
+  const fetchSections = async () => {
+    const { data, error } = await supabase
+      .from('sections')
+      .select('*')
+      .order('position', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching sections:', error)
+      return
+    }
+
+    setSections(data)
+  }
 
   useEffect(() => {
-    const fetchSections = async () => {
-      const q = query(collection(db, "sections"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const sectionsList = [];
-        querySnapshot.forEach((doc) => {
-          sectionsList.push({ id: doc.id, ...doc.data() });
-        });
-        setSections(sectionsList);
-      });
-      return () => unsubscribe();
-    };
-    fetchSections();
-  }, []);
+    fetchSections()
+  }, [])
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+  }
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const q = query(collection(db, "categories"));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const categoriesList = [];
-        querySnapshot.forEach((doc) => {
-          categoriesList.push({ id: doc.id, ...doc.data() });
-        });
-        setCategories(categoriesList);
-      });
-      return () => unsubscribe();
-    };
-    fetchCategories();
-  }, []);
+    fetchCategories()
+  }, [])
 
   const handleSearchTermChange = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
+    const value = e.target.value
+    setSearchTerm(value)
     if (value) {
       const filtered = categories.filter((category) =>
         category.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredCategories(filtered);
+      )
+      setFilteredCategories(filtered)
     } else {
-      setFilteredCategories([]);
+      setFilteredCategories([])
     }
-  };
+  }
 
   const handleSaveChanges = async () => {
-    if (!editingCategoryId) return;
-
-    // Сначала обновляем категорию, если новое изображение не нужно
-    const categoryUpdatePromise = updateDoc(
-      doc(db, "categories", editingCategoryId),
-      {
-        name: newCategoryName,
-        sectionId: selectedSection?.id,
-      }
-    );
-
-    if (image && typeof image !== "string") {
-      // Загружаем изображение в фоне
-      const uploadPromise = uploadImageToStorage(image)
-        .then((imageUrl) => {
-          return updateDoc(doc(db, "categories", editingCategoryId), {
-            image: imageUrl,
-          });
-        })
-        .catch((error) => {
-          console.error("Ошибка при загрузке изображения:", error);
-        });
-    }
-
-    await categoryUpdatePromise;
-
-    resetFormFields();
-  };
-
-  const resetFormFields = () => {
-    setEditingCategoryId(null);
-    setNewCategoryName("");
-    setSelectedSection(null);
-    setSectionName("");
-    setImage(null);
-    setSearchTerm("");
-    setFilteredCategories([]);
-    setFilteredSections([]);
-    reloadCategories();
-  };
-
-  const handleEditCategory = (category) => {
-    setEditingCategoryId(category.id);
-    setNewCategoryName(category.name);
-    setSelectedSection(
-      sections.find((section) => section.id === category.sectionId) || null
-    );
-    setSectionName(
-      sections.find((section) => section.id === category.sectionId)?.name || ""
-    );
-    setImage(category.image || null);
-    setSearchTerm(category.name);
-    setFilteredCategories([]);
-  };
-
-  const reloadCategories = () => {
-    const q = query(collection(db, "categories"));
-    onSnapshot(q, (querySnapshot) => {
-      const categoriesList = [];
-      querySnapshot.forEach((doc) => {
-        categoriesList.push({ id: doc.id, ...doc.data() });
-      });
-      setCategories(categoriesList);
-    });
-  };
-
-  const uploadImageToStorage = async (file) => {
-    if (!file) return null;
+    if (!editingCategoryId) return
 
     try {
-      const storageRef = ref(storage, `category-images/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
+      let imageUrl = image
+
+      if (image && typeof image !== 'string') {
+        imageUrl = await uploadImageToStorage(image)
+      }
+
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: newCategoryName,
+          section_id: selectedSection?.id || null,
+          image: imageUrl,
+        })
+        .eq('id', editingCategoryId)
+
+      if (error) {
+        throw error
+      }
+
+      resetFormFields()
     } catch (error) {
-      return null;
+      console.error('Error updating category:', error)
     }
-  };
+  }
+
+  const resetFormFields = () => {
+    setEditingCategoryId(null)
+    setNewCategoryName('')
+    setSelectedSection(null)
+    setSectionName('')
+    setImage(null)
+    setSearchTerm('')
+    setFilteredCategories([])
+    setFilteredSections([])
+    fetchCategories()
+  }
+
+  const handleEditCategory = (category) => {
+    const categorySection = sections.find(
+      (section) => section.id === category.section_id
+    )
+
+    setEditingCategoryId(category.id)
+    setNewCategoryName(category.name)
+    setSelectedSection(categorySection || null)
+    setSectionName(categorySection?.name || '')
+    setImage(category.image || null)
+    setSearchTerm(category.name)
+    setFilteredCategories([])
+  }
+
+  const uploadImageToStorage = async (file) => {
+    if (!file) return null
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+    const filePath = `categories/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('category-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    const { data } = supabase.storage
+      .from('category-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
 
   const handleSearchSections = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
+    const searchTerm = e.target.value.toLowerCase()
     const filtered = sections.filter((section) =>
       section.name.toLowerCase().includes(searchTerm)
-    );
-    setFilteredSections(filtered);
-    setSectionName(searchTerm);
-  };
+    )
+    setFilteredSections(filtered)
+    setSectionName(searchTerm)
+  }
 
   const handleSelectSection = (section) => {
-    setSelectedSection(section);
-    setSectionName(section.name);
-    setFilteredSections([]);
-  };
+    setSelectedSection(section)
+    setSectionName(section.name)
+    setFilteredSections([])
+  }
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setImage(file);
+      setImage(file)
     }
-  };
+  }
 
   const handleDeleteImage = () => {
-    setImage(null);
-  };
+    setImage(null)
+  }
 
   return (
     <div className="editing">
@@ -229,17 +223,17 @@ const EditingCategoryManagement = () => {
             </ul>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <div className="photo-editing">
             {image ? (
-              typeof image === "string" ? (
+              typeof image === 'string' ? (
                 <img
                   src={image}
                   alt="Обложка категории"
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
                   }}
                 />
               ) : (
@@ -247,14 +241,14 @@ const EditingCategoryManagement = () => {
                   src={URL.createObjectURL(image)}
                   alt="Обложка категории"
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
                   }}
                 />
               )
             ) : (
-              <p style={{ textAlign: "center", lineHeight: "150px" }}>
+              <p style={{ textAlign: 'center', lineHeight: '150px' }}>
                 Обложка категории
               </p>
             )}
@@ -262,7 +256,7 @@ const EditingCategoryManagement = () => {
           <div className="buttons-photo">
             <button
               className="button-editing"
-              onClick={() => document.getElementById("editFileInput").click()}
+              onClick={() => document.getElementById('editFileInput').click()}
               disabled={!editingCategoryId}
             >
               Загрузить фотографию
@@ -270,7 +264,7 @@ const EditingCategoryManagement = () => {
             <input
               type="file"
               id="editFileInput"
-              style={{ display: "none" }}
+              style={{ display: 'none' }}
               onChange={handleImageUpload}
             />
             <button
@@ -291,7 +285,7 @@ const EditingCategoryManagement = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EditingCategoryManagement;
+export default EditingCategoryManagement
