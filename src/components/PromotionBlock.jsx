@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import FavoriteButton from "./UI/FavoriteButton";
+import React, { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import FavoriteButton from './UI/FavoriteButton'
 
 const PromotionBlock = ({
   promotionType,
@@ -8,79 +8,79 @@ const PromotionBlock = ({
   categorySectionMap,
   currentUser,
 }) => {
-  const [productsVisibleCount, setProductsVisibleCount] = useState(3);
-  const [visibleProductsStart, setVisibleProductsStart] = useState(0);
-  const productsContainerRef = useRef(null);
+  const [productsVisibleCount, setProductsVisibleCount] = useState(3)
+  const [visibleProductsStart, setVisibleProductsStart] = useState(0)
+  const productsContainerRef = useRef(null)
 
-  const totalProducts = promotionsArray.length;
+  const totalProducts = promotionsArray.length
 
   // Функция для вычисления количества видимых карточек
 
   useEffect(() => {
     const calculateVisibleCount = () => {
-      const screenWidth = window.innerWidth;
+      const screenWidth = window.innerWidth
       const rootFontSizeStr = window
         .getComputedStyle(document.documentElement)
-        .getPropertyValue("font-size");
-      const rootFontSize = parseFloat(rootFontSizeStr); // Размер `1rem` в пикселях
+        .getPropertyValue('font-size')
+      const rootFontSize = parseFloat(rootFontSizeStr) // Размер `1rem` в пикселях
 
-      const cardWidthRem = 16; // Ширина карточки в rem
-      const cardMarginRem = 1; // Отступ между карточками в rem
-      const cardTotalWidthRem = cardWidthRem + cardMarginRem;
+      const cardWidthRem = 16 // Ширина карточки в rem
+      const cardMarginRem = 1 // Отступ между карточками в rem
+      const cardTotalWidthRem = cardWidthRem + cardMarginRem
 
-      const cardTotalWidthPx = cardTotalWidthRem * rootFontSize; // Полная ширина карточки в пикселях
+      const cardTotalWidthPx = cardTotalWidthRem * rootFontSize // Полная ширина карточки в пикселях
 
-      const maxVisibleCards = Math.floor(screenWidth / cardTotalWidthPx);
-      return Math.min(Math.max(maxVisibleCards, 1), totalProducts);
-    };
+      const maxVisibleCards = Math.floor(screenWidth / cardTotalWidthPx)
+      return Math.min(Math.max(maxVisibleCards, 1), totalProducts)
+    }
     // Обработчик изменения размера окна
     const handleResize = () => {
-      const visibleCount = calculateVisibleCount();
-      setProductsVisibleCount(visibleCount);
-    };
+      const visibleCount = calculateVisibleCount()
+      setProductsVisibleCount(visibleCount)
+    }
 
     // Устанавливаем начальное значение
-    handleResize();
+    handleResize()
 
     // Добавляем слушатель события
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize)
 
     // Удаляем слушатель при размонтировании компонента
-    return () => window.removeEventListener("resize", handleResize);
-  }, [totalProducts]);
+    return () => window.removeEventListener('resize', handleResize)
+  }, [totalProducts])
 
   const showNextProducts = () => {
     setVisibleProductsStart((prevStart) => {
-      const newStart = (prevStart + 1) % totalProducts;
-      animateScroll(newStart, "next");
-      return newStart;
-    });
-  };
+      const newStart = (prevStart + 1) % totalProducts
+      animateScroll(newStart, 'next')
+      return newStart
+    })
+  }
 
   const showPreviousProducts = () => {
     setVisibleProductsStart((prevStart) => {
-      const newStart = (prevStart - 1 + totalProducts) % totalProducts;
-      animateScroll(newStart, "previous");
-      return newStart;
-    });
-  };
+      const newStart = (prevStart - 1 + totalProducts) % totalProducts
+      animateScroll(newStart, 'previous')
+      return newStart
+    })
+  }
 
   const animateScroll = (newStart, direction) => {
     if (productsContainerRef.current) {
       const scrollAmount =
-        productsContainerRef.current.offsetWidth / productsVisibleCount;
+        productsContainerRef.current.offsetWidth / productsVisibleCount
       productsContainerRef.current.scrollBy({
-        left: direction === "next" ? scrollAmount : -scrollAmount,
-        behavior: "smooth",
-      });
+        left: direction === 'next' ? scrollAmount : -scrollAmount,
+        behavior: 'smooth',
+      })
     }
-  };
+  }
 
-  const visibleProducts = [];
+  const visibleProducts = []
   for (let i = 0; i < productsVisibleCount; i++) {
     visibleProducts.push(
       promotionsArray[(visibleProductsStart + i) % totalProducts]
-    );
+    )
   }
 
   return (
@@ -102,32 +102,36 @@ const PromotionBlock = ({
           className="promotion-products"
           ref={productsContainerRef}
           style={{
-            display: "flex",
-            overflow: "hidden",
-            scrollBehavior: "smooth",
+            display: 'flex',
+            overflow: 'hidden',
+            scrollBehavior: 'smooth',
           }}
         >
           {visibleProducts.map((promotion) => {
-            const sectionName = categorySectionMap[promotion.categoryName];
+            console.log('promotion:', promotion)
+            console.log('favorite product id:', promotion.product_id)
+
+            const sectionName = categorySectionMap[promotion.category_name]
 
             if (!sectionName) {
               console.warn(
-                `Не удалось получить 'sectionName' для категории ${promotion.categoryName}.`
-              );
-              return null;
+                `Не удалось получить 'sectionName' для категории ${promotion.category_name}.`
+              )
+              return null
             }
 
             return (
               <Link
                 key={promotion.id}
-                to={`/${sectionName}/${promotion.categoryName}/${promotion.productId}`}
+                to={`/${sectionName}/${promotion.category_name}/${promotion.product_id}`}
                 className="card"
               >
-                <FavoriteButton productId={promotion.productId} />
-                {promotion.mainImage ? (
+                <FavoriteButton productId={promotion.product_id} />
+
+                {promotion.main_image ? (
                   <img
-                    src={promotion.mainImage}
-                    alt={promotion.productName || "Товар без названия"}
+                    src={promotion.main_image}
+                    alt={promotion.product_name || 'Товар без названия'}
                   />
                 ) : (
                   <p>Изображение товара недоступно</p>
@@ -135,16 +139,18 @@ const PromotionBlock = ({
 
                 <div className="product-values">
                   <p className="product-name">
-                    {promotion.companyName} {promotion.productName}
+                    {promotion.company_name} {promotion.product_name}
                   </p>
+
                   <div>
                     <p
                       className={`product-price ${
-                        promotion.discount ? "product-price-none" : ""
+                        promotion.discount ? 'product-price-none' : ''
                       }`}
                     >
                       {promotion.price} ₽
                     </p>
+
                     {promotion.discount && (
                       <p className="product-discount-price">
                         {promotion.discount} ₽
@@ -153,7 +159,7 @@ const PromotionBlock = ({
                   </div>
                 </div>
               </Link>
-            );
+            )
           })}
         </div>
 
@@ -165,7 +171,7 @@ const PromotionBlock = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PromotionBlock;
+export default PromotionBlock

@@ -1,110 +1,98 @@
-import React, { useState, useEffect, useContext } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  doc,
-  getDoc,
-} from "firebase/firestore";
-import { db } from "../../index.js";
-import "./promotions.css";
-import { AuthContext } from "../../AuthContext.jsx";
-import PromotionBlock from "../PromotionBlock.jsx";
+import React, { useState, useEffect, useContext } from 'react'
+import { supabase } from '../../lib/supabaseClient'
+import './promotions.css'
+import { AuthContext } from '../../AuthContext.jsx'
+import PromotionBlock from '../PromotionBlock.jsx'
 
 export default function Promotions() {
-  const [promotions, setPromotions] = useState([]);
-  const [categorySectionMap, setCategorySectionMap] = useState({});
-  const { currentUser } = useContext(AuthContext);
+  const [promotions, setPromotions] = useState([])
+  const [categorySectionMap, setCategorySectionMap] = useState({})
+  const [isLoading, setIsLoading] = useState(true)
+
+  const { currentUser } = useContext(AuthContext)
 
   useEffect(() => {
     const fetchData = async () => {
-      const promotionsCollection = collection(db, "promotions");
-      const promotionsSnapshot = await getDocs(promotionsCollection);
-      const promotionsList = promotionsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      try {
+        const { data: promotionsData, error: promotionsError } = await supabase
+          .from('promotions')
+          .select('*')
+          .order('position', { ascending: true })
 
-      const categoryNames = [
-        ...new Set(promotionsList.map((p) => p.categoryName)),
-      ];
-
-      const categorySectionMap = {};
-
-      for (const categoryName of categoryNames) {
-        console.log(`Fetching category: ${categoryName}`);
-        const categoryQuery = query(
-          collection(db, "categories"),
-          where("name", "==", categoryName)
-        );
-        const categorySnapshot = await getDocs(categoryQuery);
-
-        if (!categorySnapshot.empty) {
-          const categoryData = categorySnapshot.docs[0].data();
-          const sectionId = categoryData.sectionId;
-
-          if (sectionId) {
-            const sectionRef = doc(db, "sections", sectionId);
-            const sectionSnapshot = await getDoc(sectionRef);
-
-            if (sectionSnapshot.exists()) {
-              const sectionData = sectionSnapshot.data();
-              const sectionName = sectionData.name;
-
-              if (sectionName) {
-                categorySectionMap[categoryName] = sectionName;
-              } else {
-                console.warn(
-                  `У раздела с ID ${sectionId} отсутствует поле 'name'.`
-                );
-              }
-            } else {
-              console.warn(`Раздел с ID ${sectionId} не найден.`);
-            }
-          } else {
-            console.warn(
-              `У категории ${categoryName} отсутствует поле 'sectionId'.`
-            );
-          }
-        } else {
-          console.warn(`Категория ${categoryName} не найдена в базе данных.`);
+        if (promotionsError) {
+          throw promotionsError
         }
+
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*')
+
+        if (categoriesError) {
+          throw categoriesError
+        }
+
+        const { data: sectionsData, error: sectionsError } = await supabase
+          .from('sections')
+          .select('*')
+
+        if (sectionsError) {
+          throw sectionsError
+        }
+
+        const sectionNameById = {}
+
+        sectionsData.forEach((section) => {
+          sectionNameById[section.id] = section.name
+        })
+
+        const newCategorySectionMap = {}
+
+        categoriesData.forEach((category) => {
+          const sectionName = sectionNameById[category.section_id]
+
+          if (sectionName) {
+            newCategorySectionMap[category.name] = sectionName
+          }
+        })
+
+        setPromotions(promotionsData)
+        setCategorySectionMap(newCategorySectionMap)
+      } catch (error) {
+        console.error('Error fetching promotions data:', error)
+      } finally {
+        setIsLoading(false)
       }
+    }
 
-      setPromotions(promotionsList);
-      setCategorySectionMap(categorySectionMap);
-    };
-
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const groupedPromotions = {
     Акции: [],
     Рекомендуем: [],
-    "Хиты продаж": [],
+    'Хиты продаж': [],
     Новинки: [],
-  };
+  }
 
   promotions.forEach((promotion) => {
-    if (groupedPromotions[promotion.promotionType]) {
-      groupedPromotions[promotion.promotionType].push(promotion);
+    if (groupedPromotions[promotion.promotion_type]) {
+      groupedPromotions[promotion.promotion_type].push(promotion)
     } else {
-      groupedPromotions[promotion.promotionType] = [promotion];
+      groupedPromotions[promotion.promotion_type] = [promotion]
     }
-  });
+  })
 
-  if (promotions.length === 0 || Object.keys(categorySectionMap).length === 0) {
-    return <div>Загрузка...</div>;
+  if (isLoading) {
+    return <div>Загрузка...</div>
   }
 
   return (
     <div className="promotions">
       {Object.keys(groupedPromotions).map((promotionType) => {
-        const promotionsArray = groupedPromotions[promotionType];
+        const promotionsArray = groupedPromotions[promotionType]
 
         if (promotionsArray.length === 0) {
-          return null;
+          return null
         }
 
         return (
@@ -115,8 +103,8 @@ export default function Promotions() {
             categorySectionMap={categorySectionMap}
             currentUser={currentUser}
           />
-        );
+        )
       })}
     </div>
-  );
+  )
 }

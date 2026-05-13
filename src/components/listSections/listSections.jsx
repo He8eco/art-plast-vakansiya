@@ -1,75 +1,73 @@
-import "./listSections.css";
-import React, { useState, useEffect } from "react";
-import { db } from "../../index.js";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import './listSections.css'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
+import { useNavigate } from 'react-router-dom'
 
 const SectionsList = ({ className, onClose }) => {
-  const [sections, setSections] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [hoveredSection, setHoveredSection] = useState(null);
-  const [hoverTimeout, setHoverTimeout] = useState(null);
-  const [isDropdownVisible, setDropdownVisible] = useState(true);
+  const [sections, setSections] = useState([])
+  const [categories, setCategories] = useState([])
+  const [hoveredSection, setHoveredSection] = useState(null)
+  const [hoverTimeout, setHoverTimeout] = useState(null)
+  const [isDropdownVisible, setDropdownVisible] = useState(true)
 
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const subscribeToCollection = (collectionName, setState, options = {}) => {
-    const collectionQuery = query(
-      collection(db, collectionName),
-      ...(options.orderBy ? [orderBy(options.orderBy)] : [])
-    );
+  const fetchSections = async () => {
+    const { data, error } = await supabase
+      .from('sections')
+      .select('*')
+      .order('position', { ascending: true })
 
-    return onSnapshot(collectionQuery, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setState(data);
-      localStorage.setItem(
-        `cached${
-          collectionName.charAt(0).toUpperCase() + collectionName.slice(1)
-        }`,
-        JSON.stringify(data)
-      );
-    });
-  };
+    if (error) {
+      console.error('Error fetching sections:', error)
+      return
+    }
+
+    setSections(data)
+    localStorage.setItem('cachedSections', JSON.stringify(data))
+  }
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching categories:', error)
+      return
+    }
+
+    setCategories(data)
+    localStorage.setItem('cachedCategories', JSON.stringify(data))
+  }
 
   useEffect(() => {
-    const unsubscribeSections = subscribeToCollection("sections", setSections, {
-      orderBy: "position",
-    });
-    const unsubscribeCategories = subscribeToCollection(
-      "categories",
-      setCategories
-    );
-
-    return () => {
-      unsubscribeSections();
-      unsubscribeCategories();
-    };
-  }, []);
+    fetchSections()
+    fetchCategories()
+  }, [])
 
   const getCategoriesBySection = (sectionId) => {
-    return categories.filter((category) => category.sectionId === sectionId);
-  };
+    return categories.filter((category) => category.section_id === sectionId)
+  }
 
   const handleMouseEnter = (sectionId) => {
-    clearTimeout(hoverTimeout);
-    setDropdownVisible(true); // Сбрасываем видимость dropdown
+    clearTimeout(hoverTimeout)
+    setDropdownVisible(true) // Сбрасываем видимость dropdown
     const timer = setTimeout(() => {
-      setHoveredSection(sectionId);
-    }, 300);
-    setHoverTimeout(timer);
-  };
+      setHoveredSection(sectionId)
+    }, 300)
+    setHoverTimeout(timer)
+  }
 
   const handleContainerMouseLeave = () => {
-    clearTimeout(hoverTimeout);
-    setHoveredSection(null);
-  };
+    clearTimeout(hoverTimeout)
+    setHoveredSection(null)
+  }
 
   const handleCategoryClick = (categoryName, sectionName) => {
-    navigate(`/${sectionName}/${categoryName}`);
-  };
+    navigate(`/${sectionName}/${categoryName}`)
+  }
 
   return (
     <div
@@ -79,8 +77,8 @@ const SectionsList = ({ className, onClose }) => {
       <button
         className="close-listSections close-button"
         onClick={() => {
-          onClose();
-          setHoveredSection(null); // Сброс hoveredSection
+          onClose()
+          setHoveredSection(null) // Сброс hoveredSection
         }}
       >
         ×
@@ -91,7 +89,7 @@ const SectionsList = ({ className, onClose }) => {
           <li
             key={section.id}
             className={`section ${
-              hoveredSection === section.id ? "active-section" : ""
+              hoveredSection === section.id ? 'active-section' : ''
             }`}
             onMouseEnter={() => handleMouseEnter(section.id)}
           >
@@ -122,7 +120,7 @@ const SectionsList = ({ className, onClose }) => {
         ))}
       </ul>
     </div>
-  );
-};
+  )
+}
 
-export default SectionsList;
+export default SectionsList
