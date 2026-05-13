@@ -85,5 +85,4 @@ const CatalogComponent = () => {
     </div>
   );
 };
-
 export default CatalogComponent;
