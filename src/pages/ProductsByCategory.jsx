@@ -13,7 +13,6 @@ const ProductsByCategory = () => {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 0 })
   const [availableFilters, setAvailableFilters] = useState({})
   const [selectedFilters, setSelectedFilters] = useState({})
-  const [companyNames, setCompanyNames] = useState([])
   const [selectedCompanies, setSelectedCompanies] = useState([])
   const [sliderValue, setSliderValue] = useState(null)
   const [sortOrder, setSortOrder] = useState('default')
@@ -72,7 +71,6 @@ const ProductsByCategory = () => {
         if (productsData.length === 0) {
           setPriceRange({ min: 0, max: 0 })
           setSliderValue([0, 0])
-          setCompanyNames([])
           setAvailableFilters({})
           return
         }
@@ -87,12 +85,6 @@ const ProductsByCategory = () => {
         setPriceRange({ min: minPrice, max: maxPrice })
         setSliderValue([minPrice, maxPrice])
 
-        const uniqueCompanies = [
-          ...new Set(productsData.map((product) => product.company_name)),
-        ].filter(Boolean)
-
-        setCompanyNames(uniqueCompanies)
-
         extractFilters(productsData)
       } catch (error) {
         console.error('Ошибка при получении товаров:', error)
@@ -103,14 +95,6 @@ const ProductsByCategory = () => {
   }, [categoryName])
 
   useEffect(() => {
-    applyFiltersAndSorting()
-  }, [sliderValue, selectedFilters, selectedCompanies, sortOrder, products])
-
-  const handleSortOrder = (order) => {
-    setSortOrder((prevOrder) => (prevOrder === order ? 'default' : order))
-  }
-
-  const applyFiltersAndSorting = () => {
     let tempProducts = [...products]
 
     const [minSliderValue, maxSliderValue] = sliderValue || [
@@ -152,6 +136,18 @@ const ProductsByCategory = () => {
     }
 
     setFilteredProducts(tempProducts)
+  }, [
+    sliderValue,
+    selectedFilters,
+    selectedCompanies,
+    sortOrder,
+    products,
+    priceRange.min,
+    priceRange.max,
+  ])
+
+  const handleSortOrder = (order) => {
+    setSortOrder((prevOrder) => (prevOrder === order ? 'default' : order))
   }
 
   const extractFilters = (products) => {
@@ -182,15 +178,6 @@ const ProductsByCategory = () => {
 
   const handleSliderChange = (newRange) => {
     setSliderValue(newRange)
-  }
-
-  const handleCompanyChange = (event) => {
-    const company = event.target.value
-    setSelectedCompanies((prevSelectedCompanies) =>
-      prevSelectedCompanies.includes(company)
-        ? prevSelectedCompanies.filter((c) => c !== company)
-        : [...prevSelectedCompanies, company]
-    )
   }
 
   const handlePriceInputChange = (type, value) => {
